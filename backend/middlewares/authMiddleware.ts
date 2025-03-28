@@ -26,7 +26,6 @@ export const protect = async (req: Request, res: Response, next: NextFunction) =
     }
 };
 
-
 export const adminOnly = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     // Make sure that the protect middleware has set req.user
     if (!req.user || !req.user.id) {
@@ -50,3 +49,10 @@ export const adminOnly = async (req: Request, res: Response, next: NextFunction)
     }
 };
 
+export const idleOnly = (req: Request, res: Response, next: NextFunction): void => {
+  if (!req.user || req.user.role !== 'idle') {
+    res.status(403).json({ message: 'Only idle users can perform this action.' });
+    return;
+  }
+  next();
+};

@@ -6,6 +6,8 @@ import User from '../models/User';
 import Organization from '../models/Organization';
 import mongoose from 'mongoose';
 
+
+
 // Generate JWT Token
 const generateToken = (userId: string): string => {
   return jwt.sign({ id: userId }, process.env.JWT_SECRET!, { expiresIn: '7d' });
@@ -79,7 +81,7 @@ const signup = async (req: Request, res: Response): Promise<void> => {
     const token = generateToken(newUser._id.toString());
 
     res.status(201).json({
-      message: 'User created. Choose to create or join an organization.',
+      message: 'User created successfully',
       token,
       user: {
         id: newUser._id,

@@ -9,6 +9,8 @@ import { RequestHandler } from 'express';
 import authRoutes from './routes/authRoutes';
 import orgRoutes from './routes/organizationRoutes';
 import userRoutes from './routes/userRoutes';
+import taskRoutes from './routes/taskRoutes';
+import reportRoutes from './routes/reportsRoutes';
 configDotenv();
 
 
@@ -36,8 +38,8 @@ app.use(helmet() as RequestHandler);
 app.use('/api/auth', authRoutes)
 app.use('/api/org', orgRoutes)
 app.use('/api/users', userRoutes)
-// app.use('/api/tasks', taskRoutes)
-// app.use('/api/reports', reportRoutes)
+app.use('/api/tasks', taskRoutes)
+app.use('/api/reports', reportRoutes)
 
 
 app.get('/', (req, res) => {

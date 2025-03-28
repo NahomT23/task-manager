@@ -13,6 +13,8 @@ const helmet_1 = __importDefault(require("helmet"));
 const authRoutes_1 = __importDefault(require("./routes/authRoutes"));
 const organizationRoutes_1 = __importDefault(require("./routes/organizationRoutes"));
 const userRoutes_1 = __importDefault(require("./routes/userRoutes"));
+const taskRoutes_1 = __importDefault(require("./routes/taskRoutes"));
+const reportsRoutes_1 = __importDefault(require("./routes/reportsRoutes"));
 (0, dotenv_1.configDotenv)();
 const PORT = process.env.PORT || 3000;
 const app = (0, express_1.default)();
@@ -31,8 +33,8 @@ app.use((0, helmet_1.default)());
 app.use('/api/auth', authRoutes_1.default);
 app.use('/api/org', organizationRoutes_1.default);
 app.use('/api/users', userRoutes_1.default);
-// app.use('/api/tasks', taskRoutes)
-// app.use('/api/reports', reportRoutes)
+app.use('/api/tasks', taskRoutes_1.default);
+app.use('/api/reports', reportsRoutes_1.default);
 app.get('/', (req, res) => {
     res.send('Hello wworld');
 });

@@ -75,7 +75,7 @@ const signup = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         }
         const token = generateToken(newUser._id.toString());
         res.status(201).json({
-            message: 'User created. Choose to create or join an organization.',
+            message: 'User created successfully',
             token,
             user: {
                 id: newUser._id,
