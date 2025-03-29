@@ -11,7 +11,7 @@ interface IUserPayload {
 
 export const getUsers = async (req: Request, res: Response): Promise<void> => {
   try {
-    const userPayload = req.user as IUserPayload;
+    const userPayload = req.user as unknown as IUserPayload;
     const organizationId = userPayload.organization;
 
     const users = await User.aggregate([
@@ -109,7 +109,7 @@ export const getUsers = async (req: Request, res: Response): Promise<void> => {
 // GET A SINGLE USER BY ID FROM MY ORGANIZATION
 export const getUserById = async (req: Request, res: Response): Promise<void> => {
     try {
-      const userPayload = req.user as IUserPayload;
+      const userPayload = req.user as unknown as IUserPayload;
       const organizationId = userPayload.organization;
       const userId = req.params.id;
   
@@ -218,7 +218,7 @@ export const getUserById = async (req: Request, res: Response): Promise<void> =>
 // DELETE A USER FROM MY ORGANIZATION
 export const deleteUser = async (req: Request, res: Response): Promise<void> => {
   try {
-    const userPayload = req.user as IUserPayload;
+    const userPayload = req.user as unknown as IUserPayload;
     const organizationId = userPayload.organization;
     const userId = req.params.id;
     

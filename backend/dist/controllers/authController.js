@@ -29,7 +29,7 @@ const signup = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         res.status(400).json({ errors: errors.array() });
         return;
     }
-    const { name, email, password, adminInviteToken } = req.body;
+    const { name, email, password, invitationCode, } = req.body;
     try {
         const userExists = yield User_1.default.findOne({ email });
         if (userExists) {
@@ -43,13 +43,13 @@ const signup = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             : '';
         let organizationId = null;
         let assignedRole = 'idle'; // Default role for users without invitation
-        if (adminInviteToken) {
-            const organization = yield Organization_1.default.findOne({ "invitations.token": adminInviteToken });
+        if (invitationCode) {
+            const organization = yield Organization_1.default.findOne({ "invitations.token": invitationCode });
             if (!organization) {
                 res.status(400).json({ message: 'Invalid invitation token' });
                 return;
             }
-            const invitation = organization.invitations.find(inv => inv.token === adminInviteToken);
+            const invitation = organization.invitations.find(inv => inv.token === invitationCode);
             if (!invitation || invitation.used || invitation.expiresAt < new Date()) {
                 res.status(400).json({ message: 'Invalid or expired token' });
                 return;
@@ -68,7 +68,7 @@ const signup = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             organization: organizationId,
         });
         yield newUser.save();
-        if (adminInviteToken && organizationId) {
+        if (invitationCode && organizationId) {
             yield Organization_1.default.findByIdAndUpdate(organizationId, {
                 $push: { members: newUser._id },
             });
@@ -79,7 +79,10 @@ const signup = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             token,
             user: {
                 id: newUser._id,
+                name: newUser.name,
+                email: newUser.email,
                 role: newUser.role,
+                profileImageUrl: newUser.profileImageUrl,
                 organization: newUser.organization,
             },
         });

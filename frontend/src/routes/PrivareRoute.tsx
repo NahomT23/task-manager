@@ -1,18 +1,18 @@
-import { Outlet, Navigate } from "react-router-dom"
+import { useAuthStore } from '../store/authStore';
+import { Navigate, Outlet } from 'react-router-dom';
 
-interface PrivateRoutesProps {
-  allowedRoles: string[]; 
-}
+const ProtectedRoute = ({ allowedRoles }: { allowedRoles: string[] }) => {
+  const { user } = useAuthStore();
 
-const PrivateRoutes: React.FC<PrivateRoutesProps> = ({ allowedRoles }) => {
-  
-  const userRole = "admin";
-
-  if (!allowedRoles.includes(userRole)) {
-    return <Navigate to="/login" />; 
+  if (!user) {
+    return <Navigate to="/signin" replace />;
   }
 
-  return <Outlet />; 
-}
+  if (!allowedRoles.includes(user.role)) {
+    return <Navigate to="/" replace />; 
+  }
 
-export default PrivateRoutes;
+  return <Outlet />;
+};
+
+export default ProtectedRoute;

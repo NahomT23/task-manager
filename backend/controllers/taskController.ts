@@ -1,10 +1,12 @@
+
 import { Request, Response } from "express";
 import Task from "../models/Task";
+
 // Returns a summary of tasks for the organization (for admin dashboard)
 export const getDashboardData = async (req: Request, res: Response) => {
   try {
     // Assuming req.user.organization is set by your auth middleware
-    const organizationId = req.user.organization;
+    const organizationId = req.user!.organization;
     if (!organizationId) {
       res.status(400).json({ message: "Organization not found." });
       return;
@@ -31,7 +33,7 @@ export const getDashboardData = async (req: Request, res: Response) => {
 // Returns tasks assigned to the logged-in user
 export const getUserDashboardData = async (req: Request, res: Response) => {
   try {
-    const userId = req.user._id;
+    const userId = req.user!._id;
     const tasks = await Task.find({ assignedTo: userId });
     res.status(200).json({ tasks });
   } catch (error) {
@@ -44,7 +46,7 @@ export const getUserDashboardData = async (req: Request, res: Response) => {
 // Admins and members see tasks for their organization.
 export const getTasks = async (req: Request, res: Response) => {
   try {
-    const organizationId = req.user.organization;
+    const organizationId = req.user!.organization;
     if (!organizationId) {
       res.status(400).json({ message: "Organization not found." });
       return;
@@ -61,7 +63,7 @@ export const getTasks = async (req: Request, res: Response) => {
 export const getTasksById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const organizationId = req.user.organization;
+    const organizationId = req.user!.organization;
     const task = await Task.findOne({ _id: id, organization: organizationId }).populate("assignedTo createdBy", "-password");
     if (!task) {
       res.status(404).json({ message: "Task not found." });
@@ -91,7 +93,7 @@ export const createTask = async (req: Request, res: Response) => {
     } = req.body;
 
     // Use the organization from the logged-in admin user
-    const organization = req.user.organization;
+    const organization = req.user!.organization;
     if (!organization) {
       res.status(400).json({ message: "Organization not found." });
       return;
@@ -104,7 +106,7 @@ export const createTask = async (req: Request, res: Response) => {
       status,
       dueDate,
       assignedTo,
-      createdBy: req.user._id,
+      createdBy: req.user!._id,
       attachments,
       todoChecklist,
       progress,
@@ -123,7 +125,7 @@ export const createTask = async (req: Request, res: Response) => {
 export const updateTask = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const organizationId = req.user.organization;
+    const organizationId = req.user!.organization;
     // Ensure task belongs to the same organization
     const task = await Task.findOne({ _id: id, organization: organizationId });
     if (!task) {
@@ -145,7 +147,7 @@ export const updateTask = async (req: Request, res: Response) => {
 export const deleteTask = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const organizationId = req.user.organization;
+    const organizationId = req.user!.organization;
     // Ensure task belongs to the organization
     const task = await Task.findOne({ _id: id, organization: organizationId });
     if (!task) {
@@ -166,7 +168,7 @@ export const updateTaskStatus = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { status } = req.body; // new status value
-    const organizationId = req.user.organization;
+    const organizationId = req.user!.organization;
 
     // Validate allowed status values if needed
     const allowedStatus = ["pending", "in progress", "completed"];
@@ -198,7 +200,7 @@ export const updateTaskCheckList = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { todoChecklist } = req.body; // expected to be an array of checklist items
-    const organizationId = req.user.organization;
+    const organizationId = req.user!.organization;
 
     const task = await Task.findOneAndUpdate(
       { _id: id, organization: organizationId },

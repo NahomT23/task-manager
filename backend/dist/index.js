@@ -18,11 +18,17 @@ const reportsRoutes_1 = __importDefault(require("./routes/reportsRoutes"));
 (0, dotenv_1.configDotenv)();
 const PORT = process.env.PORT || 3000;
 const app = (0, express_1.default)();
-// MIDDLEWARES
+// Update your CORS configuration to:
 app.use((0, cors_1.default)({
-    origin: process.env.CLIENT_URL || '*',
+    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    credentials: true, // ← THIS WAS MISSING
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'] // ← Added 'Accept'
+}));
+// Add this after your CORS config to handle preflight requests
+app.options('*', (0, cors_1.default)({
+    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    credentials: true
 }));
 app.use((0, express_mongo_sanitize_1.default)());
 app.use(express_1.default.json());

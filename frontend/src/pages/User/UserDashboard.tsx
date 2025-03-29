@@ -1,9 +1,7 @@
-
-
 const UserDashboard = () => {
   return (
     <div>
-      
+      MEMBER DASHBOARD
     </div>
   )
 }

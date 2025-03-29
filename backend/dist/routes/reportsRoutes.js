@@ -7,5 +7,5 @@ const reportRoutes = (0, express_1.Router)();
 // TO EXCEL/PDF
 reportRoutes.get('/export/tasks', authMiddleware_1.protect, authMiddleware_1.adminOnly, reportsController_1.exportTasksReport);
 // FOR USER-TASK REPORT
-reportRoutes.get('/export/tasks', authMiddleware_1.protect, authMiddleware_1.adminOnly, reportsController_1.exportUserReport);
+reportRoutes.get('/export/users', authMiddleware_1.protect, authMiddleware_1.adminOnly, reportsController_1.exportUserReport);
 exports.default = reportRoutes;

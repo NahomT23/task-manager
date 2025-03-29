@@ -13,7 +13,6 @@ const generateToken = (userId: string): string => {
   return jwt.sign({ id: userId }, process.env.JWT_SECRET!, { expiresIn: '7d' });
 };
 
-
 // SIGN UP 
 const signup = async (req: Request, res: Response): Promise<void> => {
   const errors = validationResult(req);
@@ -22,7 +21,7 @@ const signup = async (req: Request, res: Response): Promise<void> => {
     return;
   }
 
-  const { name, email, password, adminInviteToken } = req.body;
+  const { name, email, password, invitationCode, } = req.body;
 
   try {
     const userExists = await User.findOne({ email });
@@ -41,14 +40,14 @@ const signup = async (req: Request, res: Response): Promise<void> => {
     let organizationId: mongoose.Types.ObjectId | null = null;
     let assignedRole = 'idle'; // Default role for users without invitation
 
-    if (adminInviteToken) {
-      const organization = await Organization.findOne({ "invitations.token": adminInviteToken });
+    if (invitationCode) {
+      const organization = await Organization.findOne({ "invitations.token": invitationCode});
       if (!organization) {
         res.status(400).json({ message: 'Invalid invitation token' });
         return;
       }
 
-      const invitation = organization.invitations.find(inv => inv.token === adminInviteToken);
+      const invitation = organization.invitations.find(inv => inv.token === invitationCode);
       if (!invitation || invitation.used || invitation.expiresAt < new Date()) {
         res.status(400).json({ message: 'Invalid or expired token' });
         return;
@@ -70,9 +69,11 @@ const signup = async (req: Request, res: Response): Promise<void> => {
       organization: organizationId,
     });
 
+
+
     await newUser.save();
 
-    if (adminInviteToken && organizationId) {
+    if (invitationCode && organizationId) {
       await Organization.findByIdAndUpdate(organizationId, {
         $push: { members: newUser._id },
       });
@@ -85,10 +86,15 @@ const signup = async (req: Request, res: Response): Promise<void> => {
       token,
       user: {
         id: newUser._id,
+        name: newUser.name,
+        email: newUser.email,
         role: newUser.role,
+        profileImageUrl: newUser.profileImageUrl,
         organization: newUser.organization,
       },
     });
+
+
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error' });

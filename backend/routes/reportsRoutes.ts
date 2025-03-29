@@ -8,7 +8,7 @@ const reportRoutes = Router()
 reportRoutes.get('/export/tasks', protect, adminOnly, exportTasksReport) 
 
 // FOR USER-TASK REPORT
-reportRoutes.get('/export/tasks', protect, adminOnly, exportUserReport)
+reportRoutes.get('/export/users', protect, adminOnly, exportUserReport)
 
 
 export default reportRoutes

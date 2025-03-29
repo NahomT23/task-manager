@@ -13,19 +13,26 @@ import taskRoutes from './routes/taskRoutes';
 import reportRoutes from './routes/reportsRoutes';
 configDotenv();
 
-
-
 const PORT = process.env.PORT  || 3000
 const app = express()
 
 
-// MIDDLEWARES
-
+// Update your CORS configuration to:
 app.use(cors({
-    origin: process.env.CLIENT_URL || '*',
+    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    credentials: true, // ← THIS WAS MISSING
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    allowedHeaders:['Content-Type', 'Authorization']    
-}))
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'] // ← Added 'Accept'
+  }))
+  
+  // Add this after your CORS config to handle preflight requests
+  app.options('*', cors({
+    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    credentials: true
+  }));
+
+
+  
 app.use(mongoSanitize())
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }));
