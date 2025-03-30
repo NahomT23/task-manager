@@ -20,11 +20,11 @@ const taskSchema = new mongoose_1.default.Schema({
     },
     status: {
         type: String,
-        enum: ['pending', 'in progress', 'completed'],
+        enum: ['pending', 'inProgress', 'completed'],
         default: 'pending',
     },
     dueDate: { type: Date },
-    assignedTo: { type: mongoose_1.default.Schema.Types.ObjectId, ref: 'User' },
+    assignedTo: [{ type: mongoose_1.default.Schema.Types.ObjectId, ref: 'User' }],
     createdBy: { type: mongoose_1.default.Schema.Types.ObjectId, ref: 'User' },
     attachments: [{ type: String }],
     todoChecklist: [todoSchema],

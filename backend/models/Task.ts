@@ -17,11 +17,11 @@ const taskSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['pending', 'in progress', 'completed'],
+        enum: ['pending', 'inProgress', 'completed'],
         default: 'pending',
     },
     dueDate: { type: Date },
-    assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    assignedTo: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     attachments: [{ type: String }],
     todoChecklist: [todoSchema],
@@ -35,3 +35,9 @@ const taskSchema = new mongoose.Schema({
 const Task = mongoose.model('Task', taskSchema);
 
 export default Task;
+
+
+
+
+
+

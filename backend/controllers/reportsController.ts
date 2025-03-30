@@ -125,7 +125,7 @@ export const exportUserReport = async (req: Request, res: Response): Promise<voi
             case "pending":
               userTaskMap[userId].pendingTasks += 1;
               break;
-            case "in progress":
+            case "inProgress":
               userTaskMap[userId].inProgressTasks += 1;
               break;
             case "completed":

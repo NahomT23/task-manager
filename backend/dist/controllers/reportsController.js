@@ -110,7 +110,7 @@ const exportUserReport = (req, res) => __awaiter(void 0, void 0, void 0, functio
                         case "pending":
                             userTaskMap[userId].pendingTasks += 1;
                             break;
-                        case "in progress":
+                        case "inProgress":
                             userTaskMap[userId].inProgressTasks += 1;
                             break;
                         case "completed":

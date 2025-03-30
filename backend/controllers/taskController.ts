@@ -2,18 +2,19 @@
 import { Request, Response } from "express";
 import Task from "../models/Task";
 
+
 // Returns a summary of tasks for the organization (for admin dashboard)
 export const getDashboardData = async (req: Request, res: Response) => {
   try {
-    // Assuming req.user.organization is set by your auth middleware
+    // Ensure the organization exists from the authenticated user
     const organizationId = req.user!.organization;
     if (!organizationId) {
       res.status(400).json({ message: "Organization not found." });
       return;
     }
-    
+
     // Aggregate tasks by status within the organization
-    const summary = await Task.aggregate([
+    const statusAggregation = await Task.aggregate([
       { $match: { organization: organizationId } },
       {
         $group: {
@@ -22,13 +23,80 @@ export const getDashboardData = async (req: Request, res: Response) => {
         },
       },
     ]);
-    
-    res.status(200).json({ summary });
+
+    // Prepare status counts
+    let allCount = 0;
+    let pendingCount = 0;
+    let inProgressCount = 0;
+    let completedCount = 0;
+
+    statusAggregation.forEach((item) => {
+      allCount += item.count;
+      const status = item._id.toString().toLowerCase();
+      if (status === "pending") {
+        pendingCount = item.count;
+      } else if (status === "in progress" || status === "inprogress") {
+        inProgressCount = item.count;
+      } else if (status === "completed") {
+        completedCount = item.count;
+      }
+    });
+
+    // Aggregate tasks by priority within the organization
+    const priorityAggregation = await Task.aggregate([
+      { $match: { organization: organizationId } },
+      {
+        $group: {
+          _id: "$priority",
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    // Prepare priority counts
+    let lowCount = 0;
+    let mediumCount = 0;
+    let highCount = 0;
+
+    priorityAggregation.forEach((item) => {
+      const priority = item._id.toString().toLowerCase();
+      if (priority === "low") {
+        lowCount = item.count;
+      } else if (priority === "medium") {
+        mediumCount = item.count;
+      } else if (priority === "high") {
+        highCount = item.count;
+      }
+    });
+
+    // Retrieve recent tasks (e.g., the 5 most recent tasks)
+    const recentTasks = await Task.find({ organization: organizationId })
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .select("_id title status priority createdAt");
+
+    res.status(200).json({
+      charts: {
+        taskDistribution: {
+          All: allCount,
+          Pending: pendingCount,
+          InProgress: inProgressCount,
+          Completed: completedCount,
+        },
+        taskPriorityLevels: {
+          Low: lowCount,
+          Medium: mediumCount,
+          High: highCount,
+        },
+      },
+      recentTasks,
+    });
   } catch (error) {
     console.error("Error in getDashboardData:", error);
     res.status(500).json({ message: "Server error." });
   }
 };
+
 
 // Returns tasks assigned to the logged-in user
 export const getUserDashboardData = async (req: Request, res: Response) => {
@@ -79,7 +147,7 @@ export const getTasksById = async (req: Request, res: Response) => {
 // Creates a new task (admin only)
 export const createTask = async (req: Request, res: Response) => {
   try {
-    // Expect task details in req.body
+
     const {
       title,
       description,
@@ -92,20 +160,26 @@ export const createTask = async (req: Request, res: Response) => {
       progress,
     } = req.body;
 
-    // Use the organization from the logged-in admin user
+
     const organization = req.user!.organization;
     if (!organization) {
       res.status(400).json({ message: "Organization not found." });
       return;
     }
 
+    const assignedArray = Array.isArray(assignedTo) ? 
+    assignedTo : 
+    [assignedTo].filter(Boolean);
+
+
+
     const newTask = new Task({
       title,
       description,
       priority,
-      status,
+      status: "pending",
       dueDate,
-      assignedTo,
+      assignedTo: assignedArray,
       createdBy: req.user!._id,
       attachments,
       todoChecklist,
@@ -120,6 +194,8 @@ export const createTask = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Server error." });
   }
 };
+
+
 
 // Updates task details
 export const updateTask = async (req: Request, res: Response) => {
