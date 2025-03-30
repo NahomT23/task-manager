@@ -21,7 +21,7 @@ const signup = async (req: Request, res: Response): Promise<void> => {
     return;
   }
 
-  const { name, email, password, invitationCode, } = req.body;
+  const { name, email, password, invitationCode } = req.body;
 
   try {
     const userExists = await User.findOne({ email });

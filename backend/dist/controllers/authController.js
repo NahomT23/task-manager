@@ -29,7 +29,7 @@ const signup = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         res.status(400).json({ errors: errors.array() });
         return;
     }
-    const { name, email, password, invitationCode, } = req.body;
+    const { name, email, password, invitationCode } = req.body;
     try {
         const userExists = yield User_1.default.findOne({ email });
         if (userExists) {

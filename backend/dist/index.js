@@ -32,6 +32,8 @@ app.use((0, express_mongo_sanitize_1.default)());
 app.use(express_1.default.json());
 app.use(express_1.default.urlencoded({ extended: true }));
 app.use((0, cookie_parser_1.default)());
+// Before helmet, this is for the profile images
+app.use('/uploads', express_1.default.static('uploads'));
 app.use((0, helmet_1.default)());
 // ROUTES
 app.use('/api/auth', authRoutes_1.default);
