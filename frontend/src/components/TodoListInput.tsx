@@ -1,4 +1,5 @@
-import { useFieldArray } from "react-hook-form";
+import { useEffect } from "react";
+import { useFieldArray, useWatch } from "react-hook-form";
 import { HiMiniPlus, HiOutlineTrash } from "react-icons/hi2";
 
 interface TodoListInputProps {
@@ -15,6 +16,19 @@ const TodoListInput = ({ control, name, setValue, register, errors }: TodoListIn
     name: name,
   });
 
+  const todoItems = useWatch({
+    control,
+    name: name,
+    defaultValue: []
+  });
+
+  useEffect(() => {
+    const completedCount = todoItems.filter((item: any) => item.completed).length;
+    const totalItems = todoItems.length;
+    const progress = totalItems > 0 ? Math.round((completedCount / totalItems) * 100) : 0;
+    setValue("progress", progress);
+  }, [todoItems, setValue]);
+
   return (
     <div className="space-y-2">
       {fields.map((field, index) => (
@@ -26,7 +40,7 @@ const TodoListInput = ({ control, name, setValue, register, errors }: TodoListIn
           />
           <div className="flex-1">
             <input
-              {...register(`${name}.${index}.text`)}
+              {...register(`${name}.${index}.text`, { required: "Checklist item is required" })}
               className="w-full p-1 border-b"
               placeholder="Checklist item"
             />

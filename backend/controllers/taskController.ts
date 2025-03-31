@@ -115,24 +115,66 @@ export const getUserDashboardData = async (req: Request, res: Response) => {
 export const getTasks = async (req: Request, res: Response) => {
   try {
     const organizationId = req.user!.organization;
+    const { status } = req.query;
+
     if (!organizationId) {
       res.status(400).json({ message: "Organization not found." });
       return;
     }
-    const tasks = await Task.find({ organization: organizationId }).populate("assignedTo createdBy", "-password");
-    res.status(200).json({ tasks });
+
+    const filter: any = { organization: organizationId };
+    
+    if (status && status !== "All") {
+      filter.status = status;
+    }
+
+    // Get tasks with status count summary
+    const [tasks, statusSummary] = await Promise.all([
+      Task.find(filter).populate("assignedTo createdBy", "-password"),
+      Task.aggregate([
+        { $match: { organization: organizationId } },
+        {
+          $facet: {
+            all: [{ $count: "count" }],
+            pending: [{ $match: { status: "pending" } }, { $count: "count" }],
+            inProgress: [{ $match: { status: "inProgress" } }, { $count: "count" }],
+            completed: [{ $match: { status: "completed" } }, { $count: "count" }]
+          }
+        }
+      ])
+    ]);
+
+    // Process status summary
+    const summary = statusSummary[0];
+    const statusCounts = {
+      All: summary.all[0]?.count || 0,
+      pending: summary.pending[0]?.count || 0,
+      inProgress: summary.inProgress[0]?.count || 0,
+      completed: summary.completed[0]?.count || 0
+    };
+
+    res.status(200).json({ 
+      tasks,
+      statusSummary: statusCounts
+    });
+    
   } catch (error) {
     console.error("Error in getTasks:", error);
     res.status(500).json({ message: "Server error." });
   }
 };
 
+
 // get single task
+
 export const getTasksById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const organizationId = req.user!.organization;
-    const task = await Task.findOne({ _id: id, organization: organizationId }).populate("assignedTo createdBy", "-password");
+    const task = await Task.findOne({ _id: id, organization: organizationId })
+      .populate("assignedTo createdBy", "-password")
+      .populate("attachments");
+      
     if (!task) {
       res.status(404).json({ message: "Task not found." });
       return;
@@ -143,7 +185,6 @@ export const getTasksById = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Server error." });
   }
 };
-
 // Creates a new task (admin only)
 export const createTask = async (req: Request, res: Response) => {
   try {

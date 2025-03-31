@@ -13,11 +13,11 @@ interface TaskListTableProps {
 const TaskListTable = ({ tableData }: TaskListTableProps) => {
   const getStatusBadgeColor = (status: string) => {
     switch (status) {
-      case 'Completed':
+      case 'completed':
         return 'bg-green-100 text-green-500 border border-green-200';
-      case 'Pending':
+      case 'pending':
         return 'bg-purple-100 text-purple-500 border border-purple-200';
-      case 'InProgress':
+      case 'inProgress':
         return 'bg-cyan-100 text-cyan-500 border border-cyan-200';
       default:
         return 'bg-gray-100 text-gray-500 border border-gray-200';
@@ -26,11 +26,11 @@ const TaskListTable = ({ tableData }: TaskListTableProps) => {
 
   const getPriorityBadgeColor = (priority: string) => {
     switch (priority) {
-      case 'High':
+      case 'high':
         return 'bg-red-100 text-red-500 border border-red-200';
-      case 'Medium':
+      case 'medium':
         return 'bg-orange-100 text-orange-500 border border-orange-200';
-      case 'Low':
+      case 'low':
         return 'bg-green-100 text-green-500 border border-green-200';
       default:
         return 'bg-gray-100 text-gray-500 border border-gray-200';

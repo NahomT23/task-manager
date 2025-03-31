@@ -32,7 +32,6 @@ app.use(cors({
   }));
 
 
-  
 app.use(mongoSanitize())
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }));

@@ -121,14 +121,45 @@ exports.getUserDashboardData = getUserDashboardData;
 // Returns all tasks for the user's organization.
 // Admins and members see tasks for their organization.
 const getTasks = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b, _c, _d;
     try {
         const organizationId = req.user.organization;
+        const { status } = req.query;
         if (!organizationId) {
             res.status(400).json({ message: "Organization not found." });
             return;
         }
-        const tasks = yield Task_1.default.find({ organization: organizationId }).populate("assignedTo createdBy", "-password");
-        res.status(200).json({ tasks });
+        const filter = { organization: organizationId };
+        if (status && status !== "All") {
+            filter.status = status;
+        }
+        // Get tasks with status count summary
+        const [tasks, statusSummary] = yield Promise.all([
+            Task_1.default.find(filter).populate("assignedTo createdBy", "-password"),
+            Task_1.default.aggregate([
+                { $match: { organization: organizationId } },
+                {
+                    $facet: {
+                        all: [{ $count: "count" }],
+                        pending: [{ $match: { status: "pending" } }, { $count: "count" }],
+                        inProgress: [{ $match: { status: "inProgress" } }, { $count: "count" }],
+                        completed: [{ $match: { status: "completed" } }, { $count: "count" }]
+                    }
+                }
+            ])
+        ]);
+        // Process status summary
+        const summary = statusSummary[0];
+        const statusCounts = {
+            All: ((_a = summary.all[0]) === null || _a === void 0 ? void 0 : _a.count) || 0,
+            pending: ((_b = summary.pending[0]) === null || _b === void 0 ? void 0 : _b.count) || 0,
+            inProgress: ((_c = summary.inProgress[0]) === null || _c === void 0 ? void 0 : _c.count) || 0,
+            completed: ((_d = summary.completed[0]) === null || _d === void 0 ? void 0 : _d.count) || 0
+        };
+        res.status(200).json({
+            tasks,
+            statusSummary: statusCounts
+        });
     }
     catch (error) {
         console.error("Error in getTasks:", error);
@@ -141,7 +172,9 @@ const getTasksById = (req, res) => __awaiter(void 0, void 0, void 0, function* (
     try {
         const { id } = req.params;
         const organizationId = req.user.organization;
-        const task = yield Task_1.default.findOne({ _id: id, organization: organizationId }).populate("assignedTo createdBy", "-password");
+        const task = yield Task_1.default.findOne({ _id: id, organization: organizationId })
+            .populate("assignedTo createdBy", "-password")
+            .populate("attachments");
         if (!task) {
             res.status(404).json({ message: "Task not found." });
             return;

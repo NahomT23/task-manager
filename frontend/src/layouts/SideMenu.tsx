@@ -25,11 +25,15 @@ const SideMenu = ({ activeMenu }: SideMenuProps) => {
     navigate('/signin');
   };
 
+
   const handleClick = (route: string) => {
     if (route === "logout") {
       handleLogout();
+    } else {
+      navigate(route);
     }
   };
+  
 
   useEffect(() => {
     if (user) {

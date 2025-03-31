@@ -13,6 +13,7 @@ import ViewTaskDetails from './pages/User/ViewTaskDetails'
 import Setup from './pages/setup/Setup'
 
 import { ToastContainer } from 'react-toastify'
+import DashboardLayout from './layouts/DashboardLayout'
 
 function App() {
 
@@ -30,10 +31,13 @@ function App() {
           <Route path='/setup' element={<Setup />} />
           
           {/* ADMIN ROUTES */}
-          <Route element={<PrivareRoutes allowedRoles={["admin"]} />}>
+    
+
+<Route element={<PrivareRoutes allowedRoles={["admin"]} />}>
             <Route path='/admin/dashboard' element={<Dashboard />} />
             <Route path='/admin/tasks' element={<ManageTasks />} />
-            <Route path='/admin/create-task' element={<CreateTask />} />
+            {/* Updated route to handle both create and edit */}
+            <Route path='/admin/create-task/:taskId?' element={<CreateTask />} />
             <Route path='/admin/users' element={<ManageUsers />} />
           </Route>
 
