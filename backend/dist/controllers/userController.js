@@ -13,97 +13,21 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteUser = exports.getUserById = exports.getUsers = void 0;
-const mongoose_1 = __importDefault(require("mongoose"));
 const User_1 = __importDefault(require("../models/User"));
+const Task_1 = __importDefault(require("../models/Task"));
 const getUsers = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const userPayload = req.user;
         const organizationId = userPayload.organization;
-        const users = yield User_1.default.aggregate([
-            // Match users in the same organization
-            { $match: { organization: new mongoose_1.default.Types.ObjectId(organizationId) } },
-            // Lookup tasks assigned to each user within the same organization
-            {
-                $lookup: {
-                    from: 'tasks', // The name of the Task collection in MongoDB
-                    let: { userId: '$_id', orgId: '$organization' },
-                    pipeline: [
-                        {
-                            $match: {
-                                $expr: {
-                                    $and: [
-                                        { $eq: ['$assignedTo', '$$userId'] },
-                                        { $eq: ['$organization', '$$orgId'] },
-                                    ],
-                                },
-                            },
-                        },
-                        // Group tasks by their status and count each group
-                        {
-                            $group: {
-                                _id: '$status',
-                                count: { $sum: 1 },
-                            },
-                        },
-                    ],
-                    as: 'taskCounts',
-                },
-            },
-            // Add fields for each task status count
-            {
-                $addFields: {
-                    pendingTasks: {
-                        $let: {
-                            vars: {
-                                pending: {
-                                    $filter: {
-                                        input: '$taskCounts',
-                                        as: 'tc',
-                                        cond: { $eq: ['$$tc._id', 'pending'] },
-                                    },
-                                },
-                            },
-                            in: { $ifNull: [{ $arrayElemAt: ['$$pending.count', 0] }, 0] },
-                        },
-                    },
-                    inProgressTasks: {
-                        $let: {
-                            vars: {
-                                inProgress: {
-                                    $filter: {
-                                        input: '$taskCounts',
-                                        as: 'tc',
-                                        cond: { $eq: ['$$tc._id', 'in progress'] },
-                                    },
-                                },
-                            },
-                            in: { $ifNull: [{ $arrayElemAt: ['$$inProgress.count', 0] }, 0] },
-                        },
-                    },
-                    completedTasks: {
-                        $let: {
-                            vars: {
-                                completed: {
-                                    $filter: {
-                                        input: '$taskCounts',
-                                        as: 'tc',
-                                        cond: { $eq: ['$$tc._id', 'completed'] },
-                                    },
-                                },
-                            },
-                            in: { $ifNull: [{ $arrayElemAt: ['$$completed.count', 0] }, 0] },
-                        },
-                    },
-                },
-            },
-            // Remove unnecessary fields
-            {
-                $project: {
-                    password: 0,
-                },
-            },
-        ]);
-        res.status(200).json(users);
+        const users = yield User_1.default.find({ organization: organizationId })
+            .select('-password') // Exclude passwords
+            .lean();
+        const allTasks = yield Task_1.default.find({ organization: organizationId });
+        const usersWithTasks = users.map(user => {
+            const userTasks = allTasks.filter(task => task.assignedTo.includes(user._id));
+            return Object.assign(Object.assign({}, user), { pendingTasks: userTasks.filter(t => t.status === 'pending').length, inProgressTasks: userTasks.filter(t => t.status === 'inProgress').length, completedTasks: userTasks.filter(t => t.status === 'completed').length });
+        });
+        res.status(200).json(usersWithTasks);
     }
     catch (error) {
         console.error('Error fetching users:', error);
@@ -111,105 +35,52 @@ const getUsers = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     }
 });
 exports.getUsers = getUsers;
-// GET A SINGLE USER BY ID FROM MY ORGANIZATION
 const getUserById = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const userPayload = req.user;
         const organizationId = userPayload.organization;
         const userId = req.params.id;
-        const result = yield User_1.default.aggregate([
-            // Match the specific user in the organization
-            {
-                $match: {
-                    _id: new mongoose_1.default.Types.ObjectId(userId),
-                    organization: new mongoose_1.default.Types.ObjectId(organizationId)
-                }
-            },
-            // Lookup tasks assigned to this user
-            {
-                $lookup: {
-                    from: 'tasks',
-                    let: { userId: '$_id', orgId: '$organization' },
-                    pipeline: [
-                        {
-                            $match: {
-                                $expr: {
-                                    $and: [
-                                        { $eq: ['$assignedTo', '$$userId'] },
-                                        { $eq: ['$organization', '$$orgId'] }
-                                    ]
-                                }
-                            }
-                        },
-                        {
-                            $group: {
-                                _id: '$status',
-                                count: { $sum: 1 }
-                            }
-                        }
-                    ],
-                    as: 'taskCounts'
-                }
-            },
-            // Add task count fields
-            {
-                $addFields: {
-                    pendingTasks: {
-                        $let: {
-                            vars: {
-                                pending: {
-                                    $filter: {
-                                        input: '$taskCounts',
-                                        as: 'tc',
-                                        cond: { $eq: ['$$tc._id', 'pending'] }
-                                    }
-                                }
-                            },
-                            in: { $ifNull: [{ $arrayElemAt: ['$$pending.count', 0] }, 0] }
-                        }
-                    },
-                    inProgressTasks: {
-                        $let: {
-                            vars: {
-                                inProgress: {
-                                    $filter: {
-                                        input: '$taskCounts',
-                                        as: 'tc',
-                                        cond: { $eq: ['$$tc._id', 'in progress'] }
-                                    }
-                                }
-                            },
-                            in: { $ifNull: [{ $arrayElemAt: ['$$inProgress.count', 0] }, 0] }
-                        }
-                    },
-                    completedTasks: {
-                        $let: {
-                            vars: {
-                                completed: {
-                                    $filter: {
-                                        input: '$taskCounts',
-                                        as: 'tc',
-                                        cond: { $eq: ['$$tc._id', 'completed'] }
-                                    }
-                                }
-                            },
-                            in: { $ifNull: [{ $arrayElemAt: ['$$completed.count', 0] }, 0] }
-                        }
-                    }
-                }
-            },
-            // Remove sensitive fields
-            {
-                $project: {
-                    password: 0,
-                }
-            }
-        ]);
-        if (result.length === 0) {
+        // 1. Find the user in the organization
+        const user = yield User_1.default.findOne({
+            _id: userId,
+            organization: organizationId
+        }).select('-password');
+        if (!user) {
             res.status(404).json({ message: 'User not found in your organization' });
             return;
         }
-        res.status(200).json(result[0]);
+        // 2. Find all tasks assigned to this user with full details
+        const tasks = yield Task_1.default.find({
+            assignedTo: user._id,
+            organization: organizationId
+        })
+            .populate('assignedTo createdBy', 'name email profileImageUrl')
+            .sort({ dueDate: 1 });
+        // 3. Count tasks by status
+        const taskCounts = {
+            pending: tasks.filter(t => t.status === 'pending').length,
+            inProgress: tasks.filter(t => t.status === 'inProgress').length,
+            completed: tasks.filter(t => t.status === 'completed').length
+        };
+        const response = {
+            user: user.toObject(),
+            taskStats: taskCounts,
+            tasks: tasks.map(task => ({
+                _id: task._id,
+                title: task.title,
+                description: task.description,
+                status: task.status,
+                priority: task.priority,
+                dueDate: task.dueDate,
+                progress: task.progress,
+                assignedTo: task.assignedTo,
+                createdBy: task.createdBy,
+                attachments: task.attachments,
+                todoChecklist: task.todoChecklist,
+                createdAt: task.createdAt
+            }))
+        };
+        res.status(200).json(response);
     }
     catch (error) {
         console.error('Error fetching user by id:', error);
@@ -223,7 +94,6 @@ const deleteUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         const userPayload = req.user;
         const organizationId = userPayload.organization;
         const userId = req.params.id;
-        // Ensure that the user to be deleted is in the same organization.
         const user = yield User_1.default.findOne({ _id: userId, organization: organizationId });
         if (!user) {
             res.status(404).json({ message: 'User not found in your organization' });

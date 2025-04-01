@@ -8,7 +8,7 @@ const AvatarGroup = ({ avatars, maxVisible = 3 }: AvatarGroupProps) => {
   const remaining = avatars.length - maxVisible;
 
   return (
-    <div className="flex -space-x-2">
+    <div className="flex -space-x-2 ml-2">
       {visibleAvatars.map((avatar, index) => (
         <img
           key={index}

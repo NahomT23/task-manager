@@ -2,10 +2,11 @@ import { Request, Response } from "express";
 import Task from "../models/Task";
 import excelJS from "exceljs";
 import User from "../models/User";
+import moment from 'moment'
+
 
 export const exportTasksReport = async (req: Request, res: Response): Promise<void> => {
   try {
- 
     const userOrganization = req.user?.organization;
 
     if (!userOrganization) {
@@ -16,32 +17,45 @@ export const exportTasksReport = async (req: Request, res: Response): Promise<vo
     // Get tasks for user's organization
     const tasks = await Task.find({ organization: userOrganization }).populate("assignedTo", "name email");
 
-    // Create Excel workbook
+    // Create Excel workbook and worksheet
     const workbook = new excelJS.Workbook();
     const worksheet = workbook.addWorksheet("Tasks Report");
 
-    // Define columns
+    // Define columns, including new columns
     worksheet.columns = [
       { header: "Task ID", key: "_id", width: 25 },
       { header: "Title", key: "title", width: 30 },
       { header: "Description", key: "description", width: 50 },
       { header: "Priority", key: "priority", width: 15 },
       { header: "Status", key: "status", width: 20 },
+      { header: "Created On", key: "createdOn", width: 20 },
       { header: "Due Date", key: "dueDate", width: 20 },
+      { header: "Duration (days)", key: "duration", width: 20 },
       { header: "Assigned To", key: "assignedTo", width: 30 },
     ];
 
-    // Add rows
+    // Add rows to the worksheet
     tasks.forEach((task) => {
       const assignedToArray = Array.isArray(task.assignedTo)
         ? task.assignedTo
         : task.assignedTo
         ? [task.assignedTo]
         : [];
-      
+
       const assignedToStr = assignedToArray
         .map((user: any) => `${user.name} (${user.email})`)
         .join(", ") || "Unassigned";
+
+      // Format dates using Moment.js
+      const createdOnStr = task.createdAt ? moment(task.createdAt).format("MM/DD/YYYY") : "";
+      const dueDateStr = task.dueDate ? moment(task.dueDate).format("MM/DD/YYYY") : "";
+
+      // Calculate duration
+      let duration = "N/A";
+      if (task.dueDate && task.createdAt) {
+        const diffMs = task.dueDate.getTime() - task.createdAt.getTime();
+        duration = (diffMs / (1000 * 60 * 60 * 24)).toFixed(2);
+      }
 
       worksheet.addRow({
         _id: task._id,
@@ -49,12 +63,14 @@ export const exportTasksReport = async (req: Request, res: Response): Promise<vo
         description: task.description,
         priority: task.priority,
         status: task.status,
-        dueDate: task.dueDate ? task.dueDate.toISOString() : "",
+        createdOn: createdOnStr,
+        dueDate: dueDateStr,
+        duration,
         assignedTo: assignedToStr,
       });
     });
 
-    // Set response headers
+
     res.setHeader(
       "Content-Type",
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -64,7 +80,7 @@ export const exportTasksReport = async (req: Request, res: Response): Promise<vo
       "attachment; filename=tasks_report.xlsx"
     );
 
-    // Send Excel file
+
     await workbook.xlsx.write(res);
     res.end();
   } catch (error: any) {

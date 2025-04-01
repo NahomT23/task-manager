@@ -6,7 +6,7 @@ import User from '../models/User';
 
 export const generateInvitationCode = async (req: Request, res: Response): Promise<void> => {
   try {
-    // Ensure the user is authenticated and is an admin
+
     if (!req.user || req.user.role !== 'admin') {
       res.status(403).json({ message: 'Only admins can generate invitation codes' });
       return;

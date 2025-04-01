@@ -14,6 +14,7 @@ import Setup from './pages/setup/Setup'
 
 import { ToastContainer } from 'react-toastify'
 import DashboardLayout from './layouts/DashboardLayout'
+import UserDetails from './pages/Admin/UserDetails'
 
 function App() {
 
@@ -31,15 +32,26 @@ function App() {
           <Route path='/setup' element={<Setup />} />
           
           {/* ADMIN ROUTES */}
-    
-
-<Route element={<PrivareRoutes allowedRoles={["admin"]} />}>
+          
+          
+          
+          {/* <Route element={<PrivareRoutes allowedRoles={["admin"]} />}>
             <Route path='/admin/dashboard' element={<Dashboard />} />
             <Route path='/admin/tasks' element={<ManageTasks />} />
-            {/* Updated route to handle both create and edit */}
+
             <Route path='/admin/create-task/:taskId?' element={<CreateTask />} />
             <Route path='/admin/users' element={<ManageUsers />} />
-          </Route>
+          </Route> */}
+
+{/* FIX TYPO, I WROTE PRIVARE INSTEAD OF PRIVATE */}
+<Route element={<PrivareRoutes allowedRoles={["admin"]} />}>
+  <Route path='/admin/dashboard' element={<Dashboard />} />
+  <Route path='/admin/tasks' element={<ManageTasks />} />
+  <Route path='/admin/create-task/:taskId?' element={<CreateTask />} />
+  <Route path='/admin/users' element={<ManageUsers />} />
+  <Route path='/admin/users/:userId' element={<UserDetails />} /> {/* Add this line */}
+</Route>
+
 
           {/* USER ROUTES */}
           <Route element={<PrivareRoutes allowedRoles={["member"]} />}>

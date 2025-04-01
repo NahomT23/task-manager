@@ -12,14 +12,18 @@ import SelectUsers from "../../components/SelectUsers";
 import TodoListInput from "../../components/TodoListInput";
 import AddAttachmentsInput from "../../components/AddAttachmentsInput";
 import { taskFormSchema, TaskFormValues } from "../../formSchemas/taskFormSchema";
-import moment from "moment";
 
-interface User {
-  _id: string;
-  name: string;
-  email: string;
-  profileImageUrl: string;
-}
+const defaultValues: TaskFormValues = {
+  title: "",
+  description: "",
+  priority: "medium",
+  status: "pending",
+  dueDate: new Date(),
+  assignedTo: [],
+  todoChecklist: [],
+  attachments: [],
+  progress: 0,
+};
 
 const CreateTask = () => {
   const navigate = useNavigate();
@@ -33,26 +37,23 @@ const CreateTask = () => {
     control,
     register,
     setValue,
-    reset, // Add reset here
+    reset,
     watch,
     formState: { errors, isSubmitting } 
   } = useForm<TaskFormValues>({
     resolver: zodResolver(taskFormSchema),
-    defaultValues: {
-      title: "",
-      description: "",
-      priority: "medium",
-      status: "pending",
-      dueDate: new Date(),
-      assignedTo: [],
-      todoChecklist: [],
-      attachments: [],
-      progress: 0
-    }
+    defaultValues,
   });
-  
 
   const currentTask = watch();
+
+  // When taskId changes, reset the form if we are in create mode.
+  useEffect(() => {
+    if (!taskId) {
+      // If there's no taskId (create mode), clear form data.
+      reset(defaultValues);
+    }
+  }, [taskId, reset]);
 
   useEffect(() => {
     const initializeForm = async () => {
@@ -68,8 +69,6 @@ const CreateTask = () => {
             : await fetchTaskDetails(taskId!);
             
           if (taskToEdit) {
-            const dueDate = new Date(taskToEdit.dueDate);
-            const formattedDueDate = dueDate.toISOString().split('T')[0];
             setTaskFormValues(taskToEdit);
           }
         } catch (error) {
@@ -80,16 +79,12 @@ const CreateTask = () => {
     };
 
     initializeForm();
-  }, [taskId, state, isEditing]);
+  }, [taskId, state, isEditing, navigate]);
 
-
-
- 
   const fetchTaskDetails = async (id: string) => {
     const response = await axiosInstance.get(`/tasks/${id}`);
     return response.data.task;
   };
-
 
   const setTaskFormValues = (task: any) => {
     const fields: (keyof TaskFormValues)[] = [
@@ -100,13 +95,8 @@ const CreateTask = () => {
     fields.forEach((field) => {
       const value = task[field];
       if (field === 'dueDate') {
-        // Format the date using moment to "YYYY-MM-DD"
-        // setValue(field, moment(new Date(value)).format("YYYY-MM-DD"));
-        // setValue("dueDate", new Date(formattedDate));
-
         const formattedDate = new Date(value).toISOString().split('T')[0];
-        setValue(field, new Date(formattedDate)); // Now setValue gets a Date
-
+        setValue(field, new Date(formattedDate));
       } else if (field === 'assignedTo') {
         setValue(field, value.map((u: any) => u._id));
       } else {
@@ -114,51 +104,52 @@ const CreateTask = () => {
       }
     });
   };
-  
+
+  const handleFormSubmit = async (data: TaskFormValues) => {
+    try {
+      if (isEditing && !taskId) {
+        toast.error("Invalid task ID for update");
+        return;
+      }
+
+      const payload = {
+        ...data,
+        dueDate: data.dueDate?.toISOString(),
+      };
+
+      const url = isEditing ? `/tasks/${taskId}` : "/tasks/";
+      const method = isEditing ? "put" : "post";
+
+      await axiosInstance[method](url, payload);
+      toast.success(`Task ${isEditing ? "updated" : "created"} successfully`);
 
 
-const handleFormSubmit = async (data: TaskFormValues) => {
-  try {
-    if (isEditing && !taskId) {
-      toast.error("Invalid task ID for update");
-      return;
+      if (!isEditing) {
+        reset(defaultValues);
+      }
+      
+      navigate("/admin/tasks");
+    } catch (error) {
+      console.log("error during form submission inside createTask: ", error);
     }
+  };
 
-    const payload = {
-      ...data,
-      dueDate: data.dueDate?.toISOString(),
-    };
-
-    const url = isEditing ? `/tasks/${taskId}` : "/tasks/";
-    const method = isEditing ? "put" : "post";
-
-    await axiosInstance[method](url, payload);
-    toast.success(`Task ${isEditing ? "updated" : "created"} successfully`);
-
-    // Clear the form after submission
-    reset();
-
-    navigate("/admin/tasks");
-  } catch (error) {
-    console.log("error during form submission inside createTask: ", error);
-  }
-};
-
-
-const deleteTask = async () => {
-  try {
-    if (!taskId) {
-      toast.error("No task ID provided for deletion");
-      return;
+  // Update delete handler
+  const deleteTask = async () => {
+    try {
+      if (!taskId) {
+        toast.error("No task ID provided for deletion");
+        return;
+      }
+      
+      await axiosInstance.delete(`/tasks/${taskId}`);
+      toast.success("Task deleted successfully");
+      navigate("/admin/tasks");
+    } catch (error) {
+      console.log("error while deleting: ",  error);
     }
-    
-    await axiosInstance.delete(`/tasks/${taskId}`);
-    toast.success("Task deleted successfully");
-    navigate("/admin/tasks");
-  } catch (error) {
-    console.log("error while deleting: ",  error)
-  }
-};
+  };
+
   return (
     <DashboardLayout activeMenu={isEditing ? "Update Task" : "Create Task"}>
       <form onSubmit={handleSubmit(handleFormSubmit)}>
@@ -180,9 +171,8 @@ const deleteTask = async () => {
                 )}
               </div>
 
-
-                            {/* Rest of your form fields remain the same */}
-                            <div className="mt-4">
+              {/* Task Title */}
+              <div className="mt-4">
                 <label className="text-xs font-medium text-slate-600">
                   Task Title
                 </label>
@@ -197,6 +187,7 @@ const deleteTask = async () => {
                 )}
               </div>
 
+              {/* Description */}
               <div className="mt-3">
                 <label className="text-xs font-medium text-slate-600">
                   Description
@@ -211,6 +202,7 @@ const deleteTask = async () => {
                 )}
               </div>
 
+              {/* Priority, Due Date, and Assign To */}
               <div className="grid grid-cols-12 gap-4 mt-2">
                 <div className="col-span-6 md:col-span-4">
                   <label className="text-xs font-medium text-slate-600">
@@ -229,16 +221,16 @@ const deleteTask = async () => {
                   <label className="text-xs font-medium text-slate-600">
                     Due Date
                   </label>
-
                   <input
-                   type="date"
-                   value={ currentTask.dueDate ? new Date(currentTask.dueDate).toISOString().split("T")[0] : ""}
-                   {...register("dueDate", { valueAsDate: true })}
+                    type="date"
+                    value={
+                      currentTask.dueDate
+                        ? new Date(currentTask.dueDate).toISOString().split("T")[0]
+                        : ""
+                    }
+                    {...register("dueDate", { valueAsDate: true })}
                     className="form-input"
-                    />
-
-
-
+                  />
                   {errors.dueDate && (
                     <p className="text-red-500 text-xs mt-1">{errors.dueDate.message}</p>
                   )}
@@ -258,6 +250,7 @@ const deleteTask = async () => {
                 </div>
               </div>
 
+              {/* Todo Checklist */}
               <div className="mt-3">
                 <label className="text-xs font-medium text-slate-600">
                   Todo Checklist
@@ -271,6 +264,7 @@ const deleteTask = async () => {
                 />
               </div>
 
+              {/* Attachments */}
               <div className="mt-3">
                 <label className="text-xs font-medium text-slate-600">
                   Add Attachments
@@ -284,7 +278,7 @@ const deleteTask = async () => {
                 )}
               </div>
 
-              
+              {/* Submit Button */}
               <div className="flex justify-end mt-7">
                 <button
                   type="submit"

@@ -16,6 +16,7 @@ exports.exportUserReport = exports.exportTasksReport = void 0;
 const Task_1 = __importDefault(require("../models/Task"));
 const exceljs_1 = __importDefault(require("exceljs"));
 const User_1 = __importDefault(require("../models/User"));
+const moment_1 = __importDefault(require("moment"));
 const exportTasksReport = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     try {
@@ -26,20 +27,22 @@ const exportTasksReport = (req, res) => __awaiter(void 0, void 0, void 0, functi
         }
         // Get tasks for user's organization
         const tasks = yield Task_1.default.find({ organization: userOrganization }).populate("assignedTo", "name email");
-        // Create Excel workbook
+        // Create Excel workbook and worksheet
         const workbook = new exceljs_1.default.Workbook();
         const worksheet = workbook.addWorksheet("Tasks Report");
-        // Define columns
+        // Define columns, including new columns
         worksheet.columns = [
             { header: "Task ID", key: "_id", width: 25 },
             { header: "Title", key: "title", width: 30 },
             { header: "Description", key: "description", width: 50 },
             { header: "Priority", key: "priority", width: 15 },
             { header: "Status", key: "status", width: 20 },
+            { header: "Created On", key: "createdOn", width: 20 },
             { header: "Due Date", key: "dueDate", width: 20 },
+            { header: "Duration (days)", key: "duration", width: 20 },
             { header: "Assigned To", key: "assignedTo", width: 30 },
         ];
-        // Add rows
+        // Add rows to the worksheet
         tasks.forEach((task) => {
             const assignedToArray = Array.isArray(task.assignedTo)
                 ? task.assignedTo
@@ -49,20 +52,29 @@ const exportTasksReport = (req, res) => __awaiter(void 0, void 0, void 0, functi
             const assignedToStr = assignedToArray
                 .map((user) => `${user.name} (${user.email})`)
                 .join(", ") || "Unassigned";
+            // Format dates using Moment.js
+            const createdOnStr = task.createdAt ? (0, moment_1.default)(task.createdAt).format("MM/DD/YYYY") : "";
+            const dueDateStr = task.dueDate ? (0, moment_1.default)(task.dueDate).format("MM/DD/YYYY") : "";
+            // Calculate duration
+            let duration = "N/A";
+            if (task.dueDate && task.createdAt) {
+                const diffMs = task.dueDate.getTime() - task.createdAt.getTime();
+                duration = (diffMs / (1000 * 60 * 60 * 24)).toFixed(2);
+            }
             worksheet.addRow({
                 _id: task._id,
                 title: task.title,
                 description: task.description,
                 priority: task.priority,
                 status: task.status,
-                dueDate: task.dueDate ? task.dueDate.toISOString() : "",
+                createdOn: createdOnStr,
+                dueDate: dueDateStr,
+                duration,
                 assignedTo: assignedToStr,
             });
         });
-        // Set response headers
         res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
         res.setHeader("Content-Disposition", "attachment; filename=tasks_report.xlsx");
-        // Send Excel file
         yield workbook.xlsx.write(res);
         res.end();
     }

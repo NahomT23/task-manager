@@ -18,7 +18,6 @@ const Organization_1 = __importDefault(require("../models/Organization"));
 const User_1 = __importDefault(require("../models/User"));
 const generateInvitationCode = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        // Ensure the user is authenticated and is an admin
         if (!req.user || req.user.role !== 'admin') {
             res.status(403).json({ message: 'Only admins can generate invitation codes' });
             return;

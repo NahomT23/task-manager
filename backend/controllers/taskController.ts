@@ -6,7 +6,7 @@ import Task from "../models/Task";
 // Returns a summary of tasks for the organization (for admin dashboard)
 export const getDashboardData = async (req: Request, res: Response) => {
   try {
-    // Ensure the organization exists from the authenticated user
+
     const organizationId = req.user!.organization;
     if (!organizationId) {
       res.status(400).json({ message: "Organization not found." });
@@ -24,7 +24,7 @@ export const getDashboardData = async (req: Request, res: Response) => {
       },
     ]);
 
-    // Prepare status counts
+
     let allCount = 0;
     let pendingCount = 0;
     let inProgressCount = 0;
@@ -35,7 +35,7 @@ export const getDashboardData = async (req: Request, res: Response) => {
       const status = item._id.toString().toLowerCase();
       if (status === "pending") {
         pendingCount = item.count;
-      } else if (status === "in progress" || status === "inprogress") {
+      } else if (status === "inProgress" || status === "inProgress") {
         inProgressCount = item.count;
       } else if (status === "completed") {
         completedCount = item.count;
@@ -96,7 +96,6 @@ export const getDashboardData = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Server error." });
   }
 };
-
 
 // Returns tasks assigned to the logged-in user
 export const getUserDashboardData = async (req: Request, res: Response) => {
@@ -164,9 +163,7 @@ export const getTasks = async (req: Request, res: Response) => {
   }
 };
 
-
 // get single task
-
 export const getTasksById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -185,6 +182,7 @@ export const getTasksById = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Server error." });
   }
 };
+
 // Creates a new task (admin only)
 export const createTask = async (req: Request, res: Response) => {
   try {
@@ -236,21 +234,18 @@ export const createTask = async (req: Request, res: Response) => {
   }
 };
 
-
-
 // Updates task details
 export const updateTask = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const organizationId = req.user!.organization;
-    // Ensure task belongs to the same organization
+
     const task = await Task.findOne({ _id: id, organization: organizationId });
     if (!task) {
       res.status(404).json({ message: "Task not found." });
       return;
     }
     
-    // Update allowed fields
     const updates = req.body;
     const updatedTask = await Task.findByIdAndUpdate(id, updates, { new: true });
     res.status(200).json({ task: updatedTask });
@@ -265,7 +260,7 @@ export const deleteTask = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const organizationId = req.user!.organization;
-    // Ensure task belongs to the organization
+
     const task = await Task.findOne({ _id: id, organization: organizationId });
     if (!task) {
       res.status(404).json({ message: "Task not found." });
@@ -284,11 +279,10 @@ export const deleteTask = async (req: Request, res: Response) => {
 export const updateTaskStatus = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { status } = req.body; // new status value
+    const { status } = req.body;
     const organizationId = req.user!.organization;
 
-    // Validate allowed status values if needed
-    const allowedStatus = ["pending", "in progress", "completed"];
+    const allowedStatus = ["pending", "inProgress", "completed"];
     if (!allowedStatus.includes(status)) {
       res.status(400).json({ message: "Invalid status value." });
       return;
@@ -316,7 +310,7 @@ export const updateTaskStatus = async (req: Request, res: Response) => {
 export const updateTaskCheckList = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { todoChecklist } = req.body; // expected to be an array of checklist items
+    const { todoChecklist } = req.body; 
     const organizationId = req.user!.organization;
 
     const task = await Task.findOneAndUpdate(
