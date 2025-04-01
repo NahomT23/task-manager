@@ -4,76 +4,33 @@ import Task from "../models/Task";
 
 
 // Returns a summary of tasks for the organization (for admin dashboard)
+
 export const getDashboardData = async (req: Request, res: Response) => {
   try {
-
-    const organizationId = req.user!.organization;
+    const organizationId = req.user?.organization;
     if (!organizationId) {
       res.status(400).json({ message: "Organization not found." });
       return;
     }
 
-    // Aggregate tasks by status within the organization
-    const statusAggregation = await Task.aggregate([
-      { $match: { organization: organizationId } },
-      {
-        $group: {
-          _id: "$status",
-          count: { $sum: 1 },
-        },
-      },
-    ]);
+    // Count all tasks within the organization
+    const allCount = await Task.countDocuments({ organization: organizationId });
 
+    // Count tasks by status within the organization
+    const pendingCount = await Task.countDocuments({ organization: organizationId, status: 'pending' });
+    const inProgressCount = await Task.countDocuments({ organization: organizationId, status: 'inProgress' });
+    const completedCount = await Task.countDocuments({ organization: organizationId, status: 'completed' });
 
-    let allCount = 0;
-    let pendingCount = 0;
-    let inProgressCount = 0;
-    let completedCount = 0;
+    // Count tasks by priority within the organization
+    const lowCount = await Task.countDocuments({ organization: organizationId, priority: 'low' });
+    const mediumCount = await Task.countDocuments({ organization: organizationId, priority: 'medium' });
+    const highCount = await Task.countDocuments({ organization: organizationId, priority: 'high' });
 
-    statusAggregation.forEach((item) => {
-      allCount += item.count;
-      const status = item._id.toString().toLowerCase();
-      if (status === "pending") {
-        pendingCount = item.count;
-      } else if (status === "inProgress" || status === "inProgress") {
-        inProgressCount = item.count;
-      } else if (status === "completed") {
-        completedCount = item.count;
-      }
-    });
-
-    // Aggregate tasks by priority within the organization
-    const priorityAggregation = await Task.aggregate([
-      { $match: { organization: organizationId } },
-      {
-        $group: {
-          _id: "$priority",
-          count: { $sum: 1 },
-        },
-      },
-    ]);
-
-    // Prepare priority counts
-    let lowCount = 0;
-    let mediumCount = 0;
-    let highCount = 0;
-
-    priorityAggregation.forEach((item) => {
-      const priority = item._id.toString().toLowerCase();
-      if (priority === "low") {
-        lowCount = item.count;
-      } else if (priority === "medium") {
-        mediumCount = item.count;
-      } else if (priority === "high") {
-        highCount = item.count;
-      }
-    });
-
-    // Retrieve recent tasks (e.g., the 5 most recent tasks)
+    // Retrieve the 5 most recent tasks within the organization
     const recentTasks = await Task.find({ organization: organizationId })
       .sort({ createdAt: -1 })
       .limit(5)
-      .select("_id title status priority createdAt");
+      .select('_id title status priority createdAt');
 
     res.status(200).json({
       charts: {
@@ -92,22 +49,58 @@ export const getDashboardData = async (req: Request, res: Response) => {
       recentTasks,
     });
   } catch (error) {
-    console.error("Error in getDashboardData:", error);
-    res.status(500).json({ message: "Server error." });
+    console.error('Error in getDashboardData:', error);
+    res.status(500).json({ message: 'Server error.' });
   }
 };
+
 
 // Returns tasks assigned to the logged-in user
 export const getUserDashboardData = async (req: Request, res: Response) => {
   try {
     const userId = req.user!._id;
-    const tasks = await Task.find({ assignedTo: userId });
-    res.status(200).json({ tasks });
+
+    // Count all tasks assigned to the user
+    const allCount = await Task.countDocuments({ assignedTo: userId });
+
+    // Count tasks by status
+    const pendingCount = await Task.countDocuments({ assignedTo: userId, status: 'pending' });
+    const inProgressCount = await Task.countDocuments({ assignedTo: userId, status: 'inProgress' });
+    const completedCount = await Task.countDocuments({ assignedTo: userId, status: 'completed' });
+
+    // Count tasks by priority
+    const lowCount = await Task.countDocuments({ assignedTo: userId, priority: 'low' });
+    const mediumCount = await Task.countDocuments({ assignedTo: userId, priority: 'medium' });
+    const highCount = await Task.countDocuments({ assignedTo: userId, priority: 'high' });
+
+    // Retrieve recent tasks assigned to the user
+    const recentTasks = await Task.find({ assignedTo: userId })
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .select('_id title status priority createdAt');
+
+    res.status(200).json({
+      charts: {
+        taskDistribution: {
+          All: allCount,
+          Pending: pendingCount,
+          InProgress: inProgressCount,
+          Completed: completedCount,
+        },
+        taskPriorityLevels: {
+          Low: lowCount,
+          Medium: mediumCount,
+          High: highCount,
+        },
+      },
+      recentTasks,
+    });
   } catch (error) {
-    console.error("Error in getUserDashboardData:", error);
-    res.status(500).json({ message: "Server error." });
+    console.error('Error in getUserDashboardData:', error);
+    res.status(500).json({ message: 'Server error.' });
   }
 };
+
 
 // Returns all tasks for the user's organization.
 // Admins and members see tasks for their organization.

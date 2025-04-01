@@ -1,9 +1,12 @@
+import DashboardLayout from "../../layouts/DashboardLayout"
 
 const MyTasks = () => {
   return (
-    <div>
-      
-    </div>
+    <DashboardLayout activeMenu="Manage Tasks">
+      <div>
+        My Tasks
+      </div>
+    </DashboardLayout>
   )
 }
 

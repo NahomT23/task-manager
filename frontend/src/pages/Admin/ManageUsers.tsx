@@ -3,6 +3,7 @@ import DashboardLayout from "../../layouts/DashboardLayout"
 import axiosInstance from "../../api/axiosInstance"
 import { LuFileSpreadsheet } from "react-icons/lu"
 import { UserCard } from "../../components/Cards/UserCard"
+import { toast } from "react-toastify"
 
 interface User {
   _id: string
@@ -35,9 +36,29 @@ const ManageUsers = () => {
     user.email.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
-  const handleDownloadReport = async () => {
-    // Download report logic
-  }
+
+  const handleDownloadReport = async (format: 'excel' | 'pdf') => {
+    try {
+      const response = await axiosInstance.get(`/reports/export/users?type=${format}`, {
+        responseType: "blob"
+      });
+  
+      // Get proper extension
+      const extension = format === 'excel' ? 'xlsx' : 'pdf'; // Fix here
+  
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `user_report.${extension}`); // Use correct extension
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode?.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Download error:", error);
+      toast.error("Failed to download report");
+    }
+  };
 
   useEffect(() => {
     getAllUsers()
@@ -61,15 +82,24 @@ const ManageUsers = () => {
               />
             </div>
           </div>
+          
+          <div className="flex gap-2">
+            <button 
+              onClick={() => handleDownloadReport('excel')}
+              className="flex download-btn"
+            >
+              <LuFileSpreadsheet className="text-lg" />
+              <span>Excel</span>
+            </button>
+            <button 
+              onClick={() => handleDownloadReport('pdf')}
+              className="flex download-btn bg-red-600 hover:bg-red-700"
+            >
+              <LuFileSpreadsheet className="text-lg" />
+              <span>PDF</span>
+            </button>
+          </div>
 
-          <button 
-            onClick={handleDownloadReport}
-            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors duration-200 h-fit"
-          >
-            <LuFileSpreadsheet className="text-lg" />
-            <span className="hidden lg:inline">Download Report</span>
-            <span className="lg:hidden">Report</span>
-          </button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

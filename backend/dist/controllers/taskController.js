@@ -16,70 +16,28 @@ exports.updateTaskCheckList = exports.updateTaskStatus = exports.deleteTask = ex
 const Task_1 = __importDefault(require("../models/Task"));
 // Returns a summary of tasks for the organization (for admin dashboard)
 const getDashboardData = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
     try {
-        const organizationId = req.user.organization;
+        const organizationId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.organization;
         if (!organizationId) {
             res.status(400).json({ message: "Organization not found." });
             return;
         }
-        // Aggregate tasks by status within the organization
-        const statusAggregation = yield Task_1.default.aggregate([
-            { $match: { organization: organizationId } },
-            {
-                $group: {
-                    _id: "$status",
-                    count: { $sum: 1 },
-                },
-            },
-        ]);
-        let allCount = 0;
-        let pendingCount = 0;
-        let inProgressCount = 0;
-        let completedCount = 0;
-        statusAggregation.forEach((item) => {
-            allCount += item.count;
-            const status = item._id.toString().toLowerCase();
-            if (status === "pending") {
-                pendingCount = item.count;
-            }
-            else if (status === "inProgress" || status === "inProgress") {
-                inProgressCount = item.count;
-            }
-            else if (status === "completed") {
-                completedCount = item.count;
-            }
-        });
-        // Aggregate tasks by priority within the organization
-        const priorityAggregation = yield Task_1.default.aggregate([
-            { $match: { organization: organizationId } },
-            {
-                $group: {
-                    _id: "$priority",
-                    count: { $sum: 1 },
-                },
-            },
-        ]);
-        // Prepare priority counts
-        let lowCount = 0;
-        let mediumCount = 0;
-        let highCount = 0;
-        priorityAggregation.forEach((item) => {
-            const priority = item._id.toString().toLowerCase();
-            if (priority === "low") {
-                lowCount = item.count;
-            }
-            else if (priority === "medium") {
-                mediumCount = item.count;
-            }
-            else if (priority === "high") {
-                highCount = item.count;
-            }
-        });
-        // Retrieve recent tasks (e.g., the 5 most recent tasks)
+        // Count all tasks within the organization
+        const allCount = yield Task_1.default.countDocuments({ organization: organizationId });
+        // Count tasks by status within the organization
+        const pendingCount = yield Task_1.default.countDocuments({ organization: organizationId, status: 'pending' });
+        const inProgressCount = yield Task_1.default.countDocuments({ organization: organizationId, status: 'inProgress' });
+        const completedCount = yield Task_1.default.countDocuments({ organization: organizationId, status: 'completed' });
+        // Count tasks by priority within the organization
+        const lowCount = yield Task_1.default.countDocuments({ organization: organizationId, priority: 'low' });
+        const mediumCount = yield Task_1.default.countDocuments({ organization: organizationId, priority: 'medium' });
+        const highCount = yield Task_1.default.countDocuments({ organization: organizationId, priority: 'high' });
+        // Retrieve the 5 most recent tasks within the organization
         const recentTasks = yield Task_1.default.find({ organization: organizationId })
             .sort({ createdAt: -1 })
             .limit(5)
-            .select("_id title status priority createdAt");
+            .select('_id title status priority createdAt');
         res.status(200).json({
             charts: {
                 taskDistribution: {
@@ -98,8 +56,8 @@ const getDashboardData = (req, res) => __awaiter(void 0, void 0, void 0, functio
         });
     }
     catch (error) {
-        console.error("Error in getDashboardData:", error);
-        res.status(500).json({ message: "Server error." });
+        console.error('Error in getDashboardData:', error);
+        res.status(500).json({ message: 'Server error.' });
     }
 });
 exports.getDashboardData = getDashboardData;
@@ -107,12 +65,41 @@ exports.getDashboardData = getDashboardData;
 const getUserDashboardData = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const userId = req.user._id;
-        const tasks = yield Task_1.default.find({ assignedTo: userId });
-        res.status(200).json({ tasks });
+        // Count all tasks assigned to the user
+        const allCount = yield Task_1.default.countDocuments({ assignedTo: userId });
+        // Count tasks by status
+        const pendingCount = yield Task_1.default.countDocuments({ assignedTo: userId, status: 'pending' });
+        const inProgressCount = yield Task_1.default.countDocuments({ assignedTo: userId, status: 'inProgress' });
+        const completedCount = yield Task_1.default.countDocuments({ assignedTo: userId, status: 'completed' });
+        // Count tasks by priority
+        const lowCount = yield Task_1.default.countDocuments({ assignedTo: userId, priority: 'low' });
+        const mediumCount = yield Task_1.default.countDocuments({ assignedTo: userId, priority: 'medium' });
+        const highCount = yield Task_1.default.countDocuments({ assignedTo: userId, priority: 'high' });
+        // Retrieve recent tasks assigned to the user
+        const recentTasks = yield Task_1.default.find({ assignedTo: userId })
+            .sort({ createdAt: -1 })
+            .limit(5)
+            .select('_id title status priority createdAt');
+        res.status(200).json({
+            charts: {
+                taskDistribution: {
+                    All: allCount,
+                    Pending: pendingCount,
+                    InProgress: inProgressCount,
+                    Completed: completedCount,
+                },
+                taskPriorityLevels: {
+                    Low: lowCount,
+                    Medium: mediumCount,
+                    High: highCount,
+                },
+            },
+            recentTasks,
+        });
     }
     catch (error) {
-        console.error("Error in getUserDashboardData:", error);
-        res.status(500).json({ message: "Server error." });
+        console.error('Error in getUserDashboardData:', error);
+        res.status(500).json({ message: 'Server error.' });
     }
 });
 exports.getUserDashboardData = getUserDashboardData;

@@ -5,9 +5,10 @@ import axiosInstance from "../../api/axiosInstance";
 import { LuFileSpreadsheet } from "react-icons/lu";
 import TaskStatusTabs from "../../components/TaskStatusTabs";
 import { TaskCard } from "../../components/Cards/TaskCard";
+import { toast } from "react-toastify";
 
 interface Task {
-  _id: string; 
+  _id: string;
   id: string;
   title: string;
   description: string;
@@ -66,13 +67,50 @@ const ManageTasks = () => {
     navigate(`/admin/create-task/${task._id}`, { state: { task } });
   };
 
-  const handleDownloadReport = async () => {
-  };
+  // Download handler that supports both Excel and PDF formats
 
+  const handleDownloadReport = async (format: 'excel' | 'pdf') => {
+    try {
+      const response = await axiosInstance.get(`/reports/export/tasks?type=${format}`, {
+        responseType: "blob"
+      });
+  
+      // Check if the response is an error (application/json)
+      const contentType = response.headers['content-type'];
+      if (contentType.includes('application/json')) {
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            const errorData = JSON.parse(reader.result as string);
+            toast.error(errorData.message || "Error downloading report");
+          } catch (e) {
+            toast.error("Failed to download report");
+          }
+        };
+        reader.readAsText(response.data);
+        return;
+      }
+  
+      // Get proper extension
+      const extension = format === 'excel' ? 'xlsx' : 'pdf'; // Fixed extension mapping
+  
+      // Proceed with download for PDF/Excel
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `task_details.${extension}`); // Use correct extension
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode?.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.log("error downloading task report: ", error);
+      toast.error("Error downloading task reports, please try again");
+    }
+  };
   useEffect(() => {
     fetchTasks();
   }, [filterStatus]);
-
 
   const filteredAndSortedTasks = useMemo(() => {
     let filtered = tasks.filter((task) => {
@@ -114,7 +152,7 @@ const ManageTasks = () => {
     return filtered;
   }, [tasks, searchQuery, sortOption]);
 
-  // Function to handle sort
+  // Function to handle sort selection
   const handleSortSelection = (option: string) => {
     setSortOption(option);
     setIsSortPopupOpen(false);
@@ -127,13 +165,23 @@ const ManageTasks = () => {
           <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-xl md:text-xl font-medium">My Tasks</h2>
-              <button
-                onClick={handleDownloadReport}
-                className="flex lg:hidden download-btn"
-              >
-                <LuFileSpreadsheet className="text-lg" />
-                Download Report
-              </button>
+              {/* Mobile view: two download buttons */}
+              <div className="flex lg:hidden gap-2">
+                <button
+                  onClick={() => handleDownloadReport('excel')}
+                  className="flex download-btn"
+                >
+                  <LuFileSpreadsheet className="text-lg" />
+                  <span>Excel</span>
+                </button>
+                <button
+                  onClick={() => handleDownloadReport('pdf')}
+                  className="flex download-btn bg-red-600 hover:bg-red-700"
+                >
+                  <LuFileSpreadsheet className="text-lg" />
+                  <span>PDF</span>
+                </button>
+              </div>
             </div>
             {/* Search bar */}
             <input
@@ -156,13 +204,23 @@ const ManageTasks = () => {
               activeTab={filterStatus}
               setActiveTab={setFilterStatus}
             />
-            <button
-              onClick={handleDownloadReport}
-              className="hidden lg:flex download-btn"
-            >
-              <LuFileSpreadsheet className="text-lg" />
-              Download Report
-            </button>
+            {/* Desktop view: two download buttons */}
+            <div className="hidden lg:flex gap-2">
+              <button
+                onClick={() => handleDownloadReport('excel')}
+                className="flex download-btn"
+              >
+                <LuFileSpreadsheet className="text-lg" />
+                <span>Excel</span>
+              </button>
+              <button
+                onClick={() => handleDownloadReport('pdf')}
+                className="flex download-btn bg-red-600 hover:bg-red-700"
+              >
+                <LuFileSpreadsheet className="text-lg" />
+                <span>PDF</span>
+              </button>
+            </div>
             {/* Sort button */}
             <div className="relative">
               <button
