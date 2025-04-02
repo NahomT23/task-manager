@@ -7,6 +7,7 @@ import { LuArrowLeft } from "react-icons/lu";
 
 import { StatusCard } from "../../components/Cards/UserCard";
 import { TaskCard } from "../../components/Cards/TaskCard";
+import UserDetailsSkeleton from "../../components/skeleton/UserDetailSkeleton";
 
 interface User {
   _id: string;
@@ -60,7 +61,7 @@ const UserDetails = () => {
   }, [userId]);
 
   if (loading) {
-    return <DashboardLayout activeMenu="User Details">Loading...</DashboardLayout>;
+    return <UserDetailsSkeleton />;
   }
 
   if (!user) {
@@ -120,18 +121,20 @@ const UserDetails = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
             {tasks.map((task) => (
               <TaskCard
-                    key={task._id}
-                    id={task._id}
-                    title={task.title}
-                    description={task.description}
-                    status={task.status}
-                    priority={task.priority}
-                    dueDate={task.dueDate}
-                    progress={task.progress}
-                    assignedTo={task.assignedTo}
-                    attachmentCount={task.attachments?.length || 0}
-                    todoChecklist={task.todoChecklist}
-                    onClick={() => navigate(`/admin/tasks/${task._id}`)} createdAt={""}              />
+                key={task._id}
+                id={task._id}
+                title={task.title}
+                description={task.description}
+                status={task.status}
+                priority={task.priority}
+                dueDate={task.dueDate}
+                progress={task.progress}
+                assignedTo={task.assignedTo}
+                attachmentCount={task.attachments?.length || 0}
+                todoChecklist={task.todoChecklist}
+                onClick={() => navigate(`/admin/tasks/${task._id}`)}
+                createdAt={""}
+              />
             ))}
             {tasks.length === 0 && (
               <p className="text-gray-500 text-sm md:text-base">No tasks assigned to this user</p>

@@ -101,7 +101,6 @@ export const getUserDashboardData = async (req: Request, res: Response) => {
   }
 };
 
-
 // Returns all tasks for the user's organization.
 // Admins and members see tasks for their organization.
 export const getTasks = async (req: Request, res: Response) => {
@@ -152,6 +151,35 @@ export const getTasks = async (req: Request, res: Response) => {
     
   } catch (error) {
     console.error("Error in getTasks:", error);
+    res.status(500).json({ message: "Server error." });
+  }
+};
+
+// for user to get his tasks
+export const getMyTasks = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!._id;
+    const { status } = req.query;
+
+    const filter: any = { assignedTo: userId };
+    if (status && status !== "All") {
+      filter.status = status;
+    }
+
+    // Fetch all tasks assigned to the user
+    const tasks = await Task.find(filter).populate("assignedTo createdBy", "-password");
+
+    // Optionally, build a status summary if needed
+    const statusSummary = {
+      All: tasks.length,
+      pending: tasks.filter(task => task.status === "pending").length,
+      inProgress: tasks.filter(task => task.status === "inProgress").length,
+      completed: tasks.filter(task => task.status === "completed").length,
+    };
+
+    res.status(200).json({ tasks, statusSummary });
+  } catch (error) {
+    console.error("Error in getMyTasks:", error);
     res.status(500).json({ message: "Server error." });
   }
 };
@@ -223,6 +251,42 @@ export const createTask = async (req: Request, res: Response) => {
     res.status(201).json({ task: savedTask });
   } catch (error) {
     console.error("Error in createTask:", error);
+    res.status(500).json({ message: "Server error." });
+  }
+};
+
+
+// Updates the todo checklist and the status for the user
+export const updateTaskCheckList = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { todoChecklist } = req.body;
+    const organizationId = req.user!.organization;
+
+    // Compute the new status based on the updated todo checklist
+    const completedCount = todoChecklist.filter((todo: { completed: boolean }) => todo.completed).length;
+    let newStatus: "pending" | "inProgress" | "completed" = "pending";
+    if (completedCount === todoChecklist.length) {
+      newStatus = "completed";
+    } else if (completedCount > 0) {
+      newStatus = "inProgress";
+    }
+
+    // Update both the todo checklist and the status together
+    const task = await Task.findOneAndUpdate(
+      { _id: id, organization: organizationId },
+      { todoChecklist, status: newStatus },
+      { new: true }
+    );
+
+    if (!task) {
+      res.status(404).json({ message: "Task not found." });
+      return;
+    }
+
+    res.status(200).json({ task });
+  } catch (error) {
+    console.error("Error in updateTaskCheckList:", error);
     res.status(500).json({ message: "Server error." });
   }
 };
@@ -299,27 +363,4 @@ export const updateTaskStatus = async (req: Request, res: Response) => {
   }
 };
 
-// Updates the todo checklist of a task
-export const updateTaskCheckList = async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-    const { todoChecklist } = req.body; 
-    const organizationId = req.user!.organization;
 
-    const task = await Task.findOneAndUpdate(
-      { _id: id, organization: organizationId },
-      { todoChecklist },
-      { new: true }
-    );
-
-    if (!task) {
-      res.status(404).json({ message: "Task not found." });
-      return;
-    }
-
-    res.status(200).json({ task });
-  } catch (error) {
-    console.error("Error in updateTaskCheckList:", error);
-    res.status(500).json({ message: "Server error." });
-  }
-};

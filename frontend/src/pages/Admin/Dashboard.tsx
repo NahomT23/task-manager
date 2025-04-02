@@ -10,6 +10,7 @@ import CustomPieChart from "../../components/Charts/CustomPieChart";
 import CustomBarChart from "../../components/Charts/CustomBarChart";
 import axiosInstance from "../../api/axiosInstance";
 import { IoMdCard } from "react-icons/io";
+import CountUp from 'react-countup';
 
 interface DashboardData {
   charts: {
@@ -39,10 +40,6 @@ interface BarChartData {
 }
 
 const COLORS = ["#8D51FF", "#00B8DB", "#7BCE00"];
-
-const addThousandsSeparator = (num: number) => {
-  return new Intl.NumberFormat().format(num);
-};
 
 const Dashboard = () => {
   const { user } = useAuthStore();
@@ -119,12 +116,6 @@ const Dashboard = () => {
     getDashboardData();
   }, []);
 
-  if (isLoading) {
-    return (
-      <h1 className="flex items-center justify-center text-3xl">Loading</h1>
-    );
-  }
-
   if (error) {
     return (
       <DashboardLayout activeMenu="Dashboard">
@@ -157,36 +148,52 @@ const Dashboard = () => {
           <InfoCard
             icon={<IoMdCard className="text-white text-xl" />}
             label="Total Tasks"
-            value={addThousandsSeparator(
-              dashboardData?.charts.taskDistribution.All || 0
-            )}
+            value={
+              <CountUp 
+                end={dashboardData?.charts.taskDistribution.All || 0} 
+                separator="," 
+                duration={2} 
+              />
+            }
             color="bg-blue-600"
           />
 
           <InfoCard
             icon={<IoMdCard className="text-white text-xl" />}
             label="Pending Tasks"
-            value={addThousandsSeparator(
-              dashboardData?.charts.taskDistribution.Pending || 0
-            )}
+            value={
+              <CountUp 
+                end={dashboardData?.charts.taskDistribution.Pending || 0} 
+                separator="," 
+                duration={2} 
+              />
+            }
             color="bg-violet-600"
           />
 
           <InfoCard
             icon={<IoMdCard className="text-white text-xl" />}
             label="In Progress Tasks"
-            value={addThousandsSeparator(
-              dashboardData?.charts.taskDistribution.InProgress || 0
-            )}
+            value={
+              <CountUp 
+                end={dashboardData?.charts.taskDistribution.InProgress || 0} 
+                separator="," 
+                duration={2} 
+              />
+            }
             color="bg-cyan-600"
           />
 
           <InfoCard
             icon={<IoMdCard className="text-white text-xl" />}
             label="Completed Tasks"
-            value={addThousandsSeparator(
-              dashboardData?.charts.taskDistribution.Completed || 0
-            )}
+            value={
+              <CountUp 
+                end={dashboardData?.charts.taskDistribution.Completed || 0} 
+                separator="," 
+                duration={2} 
+              />
+            }
             color="bg-lime-600"
           />
         </div>

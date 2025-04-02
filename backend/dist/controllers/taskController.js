@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateTaskCheckList = exports.updateTaskStatus = exports.deleteTask = exports.updateTask = exports.createTask = exports.getTasksById = exports.getTasks = exports.getUserDashboardData = exports.getDashboardData = void 0;
+exports.updateTaskStatus = exports.deleteTask = exports.updateTask = exports.updateTaskCheckList = exports.createTask = exports.getTasksById = exports.getMyTasks = exports.getTasks = exports.getUserDashboardData = exports.getDashboardData = void 0;
 const Task_1 = __importDefault(require("../models/Task"));
 // Returns a summary of tasks for the organization (for admin dashboard)
 const getDashboardData = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -152,6 +152,32 @@ const getTasks = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     }
 });
 exports.getTasks = getTasks;
+// for user to get his tasks
+const getMyTasks = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const userId = req.user._id;
+        const { status } = req.query;
+        const filter = { assignedTo: userId };
+        if (status && status !== "All") {
+            filter.status = status;
+        }
+        // Fetch all tasks assigned to the user
+        const tasks = yield Task_1.default.find(filter).populate("assignedTo createdBy", "-password");
+        // Optionally, build a status summary if needed
+        const statusSummary = {
+            All: tasks.length,
+            pending: tasks.filter(task => task.status === "pending").length,
+            inProgress: tasks.filter(task => task.status === "inProgress").length,
+            completed: tasks.filter(task => task.status === "completed").length,
+        };
+        res.status(200).json({ tasks, statusSummary });
+    }
+    catch (error) {
+        console.error("Error in getMyTasks:", error);
+        res.status(500).json({ message: "Server error." });
+    }
+});
+exports.getMyTasks = getMyTasks;
 // get single task
 const getTasksById = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
@@ -206,6 +232,35 @@ const createTask = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
     }
 });
 exports.createTask = createTask;
+// Updates the todo checklist and the status for the user
+const updateTaskCheckList = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { id } = req.params;
+        const { todoChecklist } = req.body;
+        const organizationId = req.user.organization;
+        // Compute the new status based on the updated todo checklist
+        const completedCount = todoChecklist.filter((todo) => todo.completed).length;
+        let newStatus = "pending";
+        if (completedCount === todoChecklist.length) {
+            newStatus = "completed";
+        }
+        else if (completedCount > 0) {
+            newStatus = "inProgress";
+        }
+        // Update both the todo checklist and the status together
+        const task = yield Task_1.default.findOneAndUpdate({ _id: id, organization: organizationId }, { todoChecklist, status: newStatus }, { new: true });
+        if (!task) {
+            res.status(404).json({ message: "Task not found." });
+            return;
+        }
+        res.status(200).json({ task });
+    }
+    catch (error) {
+        console.error("Error in updateTaskCheckList:", error);
+        res.status(500).json({ message: "Server error." });
+    }
+});
+exports.updateTaskCheckList = updateTaskCheckList;
 // Updates task details
 const updateTask = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
@@ -269,22 +324,3 @@ const updateTaskStatus = (req, res) => __awaiter(void 0, void 0, void 0, functio
     }
 });
 exports.updateTaskStatus = updateTaskStatus;
-// Updates the todo checklist of a task
-const updateTaskCheckList = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        const { id } = req.params;
-        const { todoChecklist } = req.body;
-        const organizationId = req.user.organization;
-        const task = yield Task_1.default.findOneAndUpdate({ _id: id, organization: organizationId }, { todoChecklist }, { new: true });
-        if (!task) {
-            res.status(404).json({ message: "Task not found." });
-            return;
-        }
-        res.status(200).json({ task });
-    }
-    catch (error) {
-        console.error("Error in updateTaskCheckList:", error);
-        res.status(500).json({ message: "Server error." });
-    }
-});
-exports.updateTaskCheckList = updateTaskCheckList;

@@ -3,7 +3,7 @@ import { ReactNode } from "react";
 interface InfoCardProps {
   icon: ReactNode;
   label: string;
-  value: string;
+  value: ReactNode; 
   color: string;
 }
 
@@ -15,7 +15,9 @@ const InfoCard = ({ icon, label, value, color }: InfoCardProps) => {
       </div>
       <div>
         <p className="text-sm text-gray-500">{label}</p>
-        <p className="text-lg font-semibold text-gray-800">{value}</p>
+        <p className="text-lg font-semibold text-gray-800">
+          {value} 
+        </p>
       </div>
     </div>
   );

@@ -6,6 +6,7 @@ import { LuFileSpreadsheet } from "react-icons/lu";
 import TaskStatusTabs from "../../components/TaskStatusTabs";
 import { TaskCard } from "../../components/Cards/TaskCard";
 import { toast } from "react-toastify";
+import TaskCardSkeleton from "../../components/skeleton/TaskCardSkeleton";
 
 interface Task {
   _id: string;
@@ -46,37 +47,41 @@ const ManageTasks = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOption, setSortOption] = useState<string | null>(null);
   const [isSortPopupOpen, setIsSortPopupOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   const fetchTasks = async () => {
+    setLoading(true);
     try {
       const response = await axiosInstance.get("/tasks", {
         params: {
           status: filterStatus === "All" ? undefined : filterStatus,
         },
       });
-
       setTasks(response.data.tasks);
       setStatusSummary(response.data.statusSummary);
     } catch (error) {
       console.error("Error fetching tasks:", error);
+    } finally {
+      setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchTasks();
+  }, [filterStatus]);
 
   const handleClick = (task: Task) => {
     navigate(`/admin/create-task/${task._id}`, { state: { task } });
   };
-
-  // Download handler that supports both Excel and PDF formats
 
   const handleDownloadReport = async (format: 'excel' | 'pdf') => {
     try {
       const response = await axiosInstance.get(`/reports/export/tasks?type=${format}`, {
         responseType: "blob"
       });
-  
-      // Check if the response is an error (application/json)
       const contentType = response.headers['content-type'];
+      
       if (contentType.includes('application/json')) {
         const reader = new FileReader();
         reader.onload = () => {
@@ -90,15 +95,12 @@ const ManageTasks = () => {
         reader.readAsText(response.data);
         return;
       }
-  
-      // Get proper extension
-      const extension = format === 'excel' ? 'xlsx' : 'pdf'; // Fixed extension mapping
-  
-      // Proceed with download for PDF/Excel
+
+      const extension = format === 'excel' ? 'xlsx' : 'pdf';
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `task_details.${extension}`); // Use correct extension
+      link.setAttribute('download', `task_details.${extension}`);
       document.body.appendChild(link);
       link.click();
       link.parentNode?.removeChild(link);
@@ -108,9 +110,6 @@ const ManageTasks = () => {
       toast.error("Error downloading task reports, please try again");
     }
   };
-  useEffect(() => {
-    fetchTasks();
-  }, [filterStatus]);
 
   const filteredAndSortedTasks = useMemo(() => {
     let filtered = tasks.filter((task) => {
@@ -134,25 +133,21 @@ const ManageTasks = () => {
             return (b.attachments?.length || 0) - (a.attachments?.length || 0);
           case "todos":
             return (b.todoChecklist?.length || 0) - (a.todoChecklist?.length || 0);
-          case "dueDateLongest": {
-            const diffA = new Date(a.dueDate).getTime() - new Date(a.createdAt).getTime();
-            const diffB = new Date(b.dueDate).getTime() - new Date(b.createdAt).getTime();
-            return diffB - diffA;
-          }
-          case "dueDateShortest": {
-            const diffA = new Date(a.dueDate).getTime() - new Date(a.createdAt).getTime();
-            const diffB = new Date(b.dueDate).getTime() - new Date(b.createdAt).getTime();
-            return diffA - diffB;
-          }
+          case "dueDateLongest":
+            return (new Date(b.dueDate).getTime() - new Date(b.createdAt).getTime()) - 
+                   (new Date(a.dueDate).getTime() - new Date(a.createdAt).getTime());
+          case "dueDateShortest":
+            return (new Date(a.dueDate).getTime() - new Date(a.createdAt).getTime()) - 
+                   (new Date(b.dueDate).getTime() - new Date(b.createdAt).getTime());
           default:
             return 0;
         }
       });
     }
+
     return filtered;
   }, [tasks, searchQuery, sortOption]);
 
-  // Function to handle sort selection
   const handleSortSelection = (option: string) => {
     setSortOption(option);
     setIsSortPopupOpen(false);
@@ -165,7 +160,6 @@ const ManageTasks = () => {
           <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-xl md:text-xl font-medium">My Tasks</h2>
-              {/* Mobile view: two download buttons */}
               <div className="flex lg:hidden gap-2">
                 <button
                   onClick={() => handleDownloadReport('excel')}
@@ -183,7 +177,6 @@ const ManageTasks = () => {
                 </button>
               </div>
             </div>
-            {/* Search bar */}
             <input
               type="text"
               placeholder="Search tasks by name or description..."
@@ -192,7 +185,6 @@ const ManageTasks = () => {
               className="px-4 py-2 border rounded-md w-full max-w-md"
             />
           </div>
-
           <div className="flex items-center gap-3 mt-3 lg:mt-0">
             <TaskStatusTabs
               tabs={[
@@ -204,7 +196,6 @@ const ManageTasks = () => {
               activeTab={filterStatus}
               setActiveTab={setFilterStatus}
             />
-            {/* Desktop view: two download buttons */}
             <div className="hidden lg:flex gap-2">
               <button
                 onClick={() => handleDownloadReport('excel')}
@@ -221,7 +212,6 @@ const ManageTasks = () => {
                 <span>PDF</span>
               </button>
             </div>
-            {/* Sort button */}
             <div className="relative">
               <button
                 onClick={() => setIsSortPopupOpen((prev) => !prev)}
@@ -298,29 +288,38 @@ const ManageTasks = () => {
           </div>
         </div>
 
-        {/* Tasks Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-          {filteredAndSortedTasks.map((task) => (
-            <TaskCard
-              key={task.id}
-              id={task.id}
-              title={task.title}
-              description={task.description}
-              priority={task.priority}
-              status={task.status}
-              progress={task.progress}
-              createdAt={task.createdAt}
-              dueDate={task.dueDate}
-              assignedTo={task.assignedTo.map((user) => ({
-                _id: user._id,
-                profileImageUrl: user.profileImageUrl,
-              }))}
-              attachmentCount={task.attachments?.length || 0}
-              completedTodo={task.completedTodoCount || 0}
-              todoChecklist={task.todoChecklist || []}
-              onClick={() => handleClick(task)}
-            />
-          ))}
+          {loading ? (
+            Array.from({ length: 6 }).map((_, index) => (
+              <TaskCardSkeleton key={index} />
+            ))
+          ) : filteredAndSortedTasks.length > 0 ? (
+            filteredAndSortedTasks.map((task) => (
+              <TaskCard
+                key={task.id}
+                id={task.id}
+                title={task.title}
+                description={task.description}
+                priority={task.priority}
+                status={task.status}
+                progress={task.progress}
+                createdAt={task.createdAt}
+                dueDate={task.dueDate}
+                assignedTo={task.assignedTo.map((user) => ({
+                  _id: user._id,
+                  profileImageUrl: user.profileImageUrl,
+                }))}
+                attachmentCount={task.attachments?.length || 0}
+                completedTodo={task.completedTodoCount || 0}
+                todoChecklist={task.todoChecklist || []}
+                onClick={() => handleClick(task)}
+              />
+            ))
+          ) : (
+            <div className="col-span-full text-center py-4">
+              No tasks found matching current filters
+            </div>
+          )}
         </div>
       </div>
     </DashboardLayout>

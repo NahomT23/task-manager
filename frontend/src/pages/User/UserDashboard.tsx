@@ -112,18 +112,22 @@ const UserDashboard = () => {
   };
 
   const onSeeMore = () => {
-    navigate("/admin/tasks");
+    navigate("/user/tasks");
   };
 
   useEffect(() => {
     getDashboardData();
   }, []);
 
-  if (isLoading) {
-    return (
-      <h1 className="flex items-center justify-center text-3xl">Loading</h1>
-    );
-  }
+
+
+  //   REPLACE WITH THE CUSTOM LOADING PAGE OR THE SKELETON
+
+  // if (isLoading) {
+  //   return (
+  //     <h1 className="flex items-center justify-center text-3xl">Loading</h1>
+  //   );
+  // }
 
   if (error) {
     return (

@@ -32,16 +32,7 @@ function App() {
           <Route path='/setup' element={<Setup />} />
           
           {/* ADMIN ROUTES */}
-          
-          
-          
-          {/* <Route element={<PrivareRoutes allowedRoles={["admin"]} />}>
-            <Route path='/admin/dashboard' element={<Dashboard />} />
-            <Route path='/admin/tasks' element={<ManageTasks />} />
-
-            <Route path='/admin/create-task/:taskId?' element={<CreateTask />} />
-            <Route path='/admin/users' element={<ManageUsers />} />
-          </Route> */}
+        
 
 {/* FIX TYPO, I WROTE PRIVARE INSTEAD OF PRIVATE */}
 <Route element={<PrivareRoutes allowedRoles={["admin"]} />}>
@@ -49,19 +40,19 @@ function App() {
   <Route path='/admin/tasks' element={<ManageTasks />} />
   <Route path='/admin/create-task/:taskId?' element={<CreateTask />} />
   <Route path='/admin/users' element={<ManageUsers />} />
-  <Route path='/admin/users/:userId' element={<UserDetails />} /> {/* Add this line */}
+  <Route path='/admin/users/:userId' element={<UserDetails />} />
 </Route>
 
 
           {/* USER ROUTES */}
-          <Route element={<PrivareRoutes allowedRoles={["member"]} />}>
-            <Route path='/user/dashboard' element={<UserDashboard />} />
-            <Route path='/user/my-tasks' element={<MyTasks />} />
-            <Route path='/user/task-details/:id' element={<ViewTaskDetails />} />
-          </Route>
+<Route element={<PrivareRoutes allowedRoles={["member"]} />}>
+  <Route path='/user/dashboard' element={<UserDashboard />} />
+  <Route path='/user/tasks' element={<MyTasks />} />
+  <Route path='/user/task-details/:id' element={<ViewTaskDetails />} />
+</Route>
+
         </Routes>
 
-        {/* Toast Container to display toast notifications */}
         <ToastContainer />
       </Router>
     </div>
