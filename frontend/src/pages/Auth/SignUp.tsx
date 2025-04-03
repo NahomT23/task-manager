@@ -40,14 +40,14 @@ const Signup: React.FC = () => {
     });
   };
 
-  // New handler for file input
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
+    if (e.target.files && e.target.files.length > 0) {
       setSelectedFile(e.target.files[0]);
-      setValue('profileImage', e.target.files[0]); // Update form value
+
+      setValue('profileImage', e.target.files);
     }
   };
-
+  
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-50 px-4">
       <div className="bg-white p-6 rounded-lg shadow-sm w-full max-w-[360px]">

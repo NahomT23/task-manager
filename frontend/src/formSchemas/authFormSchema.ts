@@ -14,5 +14,6 @@ export const SignUpSchema = z.object({
     .any()
     .refine((files) => !files || files.length === 0 || files[0] instanceof File, {
       message: "Profile image must be a file",
-    }),
+    })
+    .optional(),
 });

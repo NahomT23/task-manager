@@ -31,7 +31,6 @@ function App() {
           
           {/* ADMIN ROUTES */}
         
-
 {/* FIX TYPO, I WROTE PRIVARE INSTEAD OF PRIVATE */}
 <Route element={<PrivareRoutes allowedRoles={["admin"]} />}>
   <Route path='/admin/dashboard' element={<Dashboard />} />
@@ -40,7 +39,6 @@ function App() {
   <Route path='/admin/users' element={<ManageUsers />} />
   <Route path='/admin/users/:userId' element={<UserDetails />} />
 </Route>
-
 
           {/* USER ROUTES */}
 <Route element={<PrivareRoutes allowedRoles={["member"]} />}>

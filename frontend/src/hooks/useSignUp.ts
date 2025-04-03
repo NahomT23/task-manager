@@ -32,7 +32,6 @@ export const useSignUp = () => {
       formData.append('email', data.email);
       formData.append('password', data.password);
       if (data.invitationCode) {
-        // Backend expects adminInviteToken
         formData.append('invitationCode', data.invitationCode);
       }
       if (data.profileImage && data.profileImage.length > 0) {

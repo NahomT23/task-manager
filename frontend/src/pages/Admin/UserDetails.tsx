@@ -46,7 +46,7 @@ const UserDetails = () => {
   const [loading, setLoading] = useState(true);
   const { isDarkMode } = useThemeStore();
 
-  // Helper to get user's initials
+
   const getUserInitials = (name: string) => {
     return name
       .split(" ")

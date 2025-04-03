@@ -120,7 +120,7 @@ const joinOrganization = (req, res) => __awaiter(void 0, void 0, void 0, functio
         // Update user role and organization
         const user = yield User_1.default.findByIdAndUpdate(req.user.id, { role: 'member', organization: organization._id }, { new: true });
         res.status(200).json({
-            message: 'Joined organization',
+            message: `Joined ${organization.name} successfully`,
             organization,
             user,
         });
