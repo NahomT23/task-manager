@@ -39,22 +39,13 @@ const Navbar = ({ activeMenu }: NavbarProps) => {
       </button>
       
       {/* Title */}
-      <h2 className={`
-        text-lg font-medium transition-colors
-        ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}
-      `}>
+      <h2 className={`text-lg font-medium transition-colors ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}>
         Task Manager
       </h2>
 
       {/* Dark mode toggle */}
       <button
-        className={`
-          ml-auto text-2xl transition-colors
-          ${isDarkMode 
-            ? 'text-gray-100 hover:text-gray-300' 
-            : 'text-gray-700 hover:text-gray-900'
-          }
-        `}
+        className={`ml-auto text-2xl transition-colors ${isDarkMode ? 'text-gray-100 hover:text-gray-300' : 'text-gray-700 hover:text-gray-900'}`}
         onClick={toggleDarkMode}
       >
         {isDarkMode ? <HiOutlineSun /> : <HiOutlineMoon />}
@@ -62,10 +53,7 @@ const Navbar = ({ activeMenu }: NavbarProps) => {
 
       {/* Mobile menu */}
       {openSideMenu && (
-        <div className={`
-          fixed top-[61px] left-0 right-0 z-40
-          ${isDarkMode ? 'bg-gray-900' : 'bg-white'}
-        `}>
+        <div className={`fixed top-[61px] left-0 right-0 z-40 lg:hidden`}>
           <SideMenu activeMenu={activeMenu} />
         </div>
       )}

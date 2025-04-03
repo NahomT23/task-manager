@@ -1,7 +1,7 @@
 import { useAuthStore } from '../store/authStore';
 import { Navigate, Outlet } from 'react-router-dom';
 
-const ProtectedRoute = ({ allowedRoles }: { allowedRoles: string[] }) => {
+const PrivateRoutes = ({ allowedRoles }: { allowedRoles: string[] }) => {
   const { user } = useAuthStore();
 
   if (!user) {
@@ -15,4 +15,4 @@ const ProtectedRoute = ({ allowedRoles }: { allowedRoles: string[] }) => {
   return <Outlet />;
 };
 
-export default ProtectedRoute;
+export default PrivateRoutes;

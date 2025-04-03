@@ -8,7 +8,6 @@ const authRoutes = Router();
 authRoutes.post("/sign-up", upload.single("image"), signup);
 authRoutes.post("/sign-in", signin);
 authRoutes.get("/profile", protect, getUserProfile);
-authRoutes.put("/profile", protect, updateUserProfile);
-
+authRoutes.put("/profile", protect, upload.single("image"), updateUserProfile);
 
 export default authRoutes;

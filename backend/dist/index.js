@@ -9,7 +9,6 @@ const cookie_parser_1 = __importDefault(require("cookie-parser"));
 const express_1 = __importDefault(require("express"));
 const dotenv_1 = require("dotenv");
 const db_1 = __importDefault(require("./config/db"));
-const helmet_1 = __importDefault(require("helmet"));
 const authRoutes_1 = __importDefault(require("./routes/authRoutes"));
 const organizationRoutes_1 = __importDefault(require("./routes/organizationRoutes"));
 const userRoutes_1 = __importDefault(require("./routes/userRoutes"));
@@ -34,7 +33,7 @@ app.use(express_1.default.urlencoded({ extended: true }));
 app.use((0, cookie_parser_1.default)());
 // Before helmet, this is for the profile images
 app.use('/uploads', express_1.default.static('uploads'));
-app.use((0, helmet_1.default)());
+// app.use(helmet() as RequestHandler);
 // ROUTES
 app.use('/api/auth', authRoutes_1.default);
 app.use('/api/org', organizationRoutes_1.default);

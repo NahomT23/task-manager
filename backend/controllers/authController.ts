@@ -6,8 +6,6 @@ import User from '../models/User';
 import Organization from '../models/Organization';
 import mongoose from 'mongoose';
 
-
-
 // Generate JWT Token
 const generateToken = (userId: string): string => {
   return jwt.sign({ id: userId }, process.env.JWT_SECRET!, { expiresIn: '7d' });
@@ -38,10 +36,10 @@ const signup = async (req: Request, res: Response): Promise<void> => {
       : '';
 
     let organizationId: mongoose.Types.ObjectId | null = null;
-    let assignedRole = 'idle'; // Default role for users without invitation
+    let assignedRole = 'idle'; 
 
     if (invitationCode) {
-      const organization = await Organization.findOne({ "invitations.token": invitationCode});
+      const organization = await Organization.findOne({ "invitations.token": invitationCode });
       if (!organization) {
         res.status(400).json({ message: 'Invalid invitation token' });
         return;
@@ -57,7 +55,7 @@ const signup = async (req: Request, res: Response): Promise<void> => {
       await organization.save();
 
       organizationId = organization._id;
-      assignedRole = 'member'; // Assign member role for invited users
+      assignedRole = 'member';
     }
 
     const newUser = new User({
@@ -68,8 +66,6 @@ const signup = async (req: Request, res: Response): Promise<void> => {
       role: assignedRole,
       organization: organizationId,
     });
-
-
 
     await newUser.save();
 
@@ -93,8 +89,6 @@ const signup = async (req: Request, res: Response): Promise<void> => {
         organization: newUser.organization,
       },
     });
-
-
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error' });
@@ -105,21 +99,18 @@ const signin = async (req: Request, res: Response): Promise<void> => {
   const { email, password }: { email: string; password: string } = req.body;
 
   try {
-    // Find user by email
     const user = await User.findOne({ email });
     if (!user) {
       res.status(400).json({ message: 'Invalid credentials' });
       return;
     }
 
-    // Check if password matches
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       res.status(400).json({ message: 'Invalid credentials' });
       return;
     }
 
-    // Generate JWT
     const token = generateToken(user._id.toString());
 
     res.status(200).json({
@@ -143,7 +134,6 @@ const signin = async (req: Request, res: Response): Promise<void> => {
 // GET USER PROFILE 
 const getUserProfile = async (req: Request, res: Response): Promise<void> => {
   try {
-
     const user = await User.findById(req.user?.id).select('-password');
     if (!user) {
       res.status(404).json({ message: 'User not found' });
@@ -164,9 +154,9 @@ const getUserProfile = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
-// UPDATE USER PROFILE
+// UPDATE USER PROFILE  (only the name, password and profile)
 const updateUserProfile = async (req: Request, res: Response): Promise<void> => {
-  const { name, email, profileImageUrl }: { name: string; email: string; profileImageUrl?: string } = req.body;
+  const { name, password } = req.body;
 
   try {
     const user = await User.findById(req.user?.id);
@@ -175,15 +165,26 @@ const updateUserProfile = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
-    // Update user details
-    user.name = name || user.name;
-    user.email = email || user.email;
-    if (profileImageUrl) user.profileImageUrl = profileImageUrl;
+
+    if (name) {
+      user.name = name;
+    }
+
+
+    if (password) {
+      const salt = await bcrypt.genSalt(10);
+      user.password = await bcrypt.hash(password, salt);
+    }
+
+    if (req.file) {
+      user.profileImageUrl = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
+    }
 
     await user.save();
 
     res.status(200).json({
       message: 'Profile updated successfully',
+
       user: {
         id: user._id,
         name: user.name,

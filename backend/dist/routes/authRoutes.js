@@ -11,5 +11,5 @@ const authRoutes = (0, express_1.Router)();
 authRoutes.post("/sign-up", uploadMiddleware_1.default.single("image"), authController_1.signup);
 authRoutes.post("/sign-in", authController_1.signin);
 authRoutes.get("/profile", authMiddleware_1.protect, authController_1.getUserProfile);
-authRoutes.put("/profile", authMiddleware_1.protect, authController_1.updateUserProfile);
+authRoutes.put("/profile", authMiddleware_1.protect, uploadMiddleware_1.default.single("image"), authController_1.updateUserProfile);
 exports.default = authRoutes;

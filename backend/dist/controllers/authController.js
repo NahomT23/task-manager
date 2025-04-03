@@ -42,7 +42,7 @@ const signup = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             ? `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`
             : '';
         let organizationId = null;
-        let assignedRole = 'idle'; // Default role for users without invitation
+        let assignedRole = 'idle';
         if (invitationCode) {
             const organization = yield Organization_1.default.findOne({ "invitations.token": invitationCode });
             if (!organization) {
@@ -57,7 +57,7 @@ const signup = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             invitation.used = true;
             yield organization.save();
             organizationId = organization._id;
-            assignedRole = 'member'; // Assign member role for invited users
+            assignedRole = 'member';
         }
         const newUser = new User_1.default({
             name,
@@ -97,19 +97,16 @@ exports.signup = signup;
 const signin = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { email, password } = req.body;
     try {
-        // Find user by email
         const user = yield User_1.default.findOne({ email });
         if (!user) {
             res.status(400).json({ message: 'Invalid credentials' });
             return;
         }
-        // Check if password matches
         const isMatch = yield bcryptjs_1.default.compare(password, user.password);
         if (!isMatch) {
             res.status(400).json({ message: 'Invalid credentials' });
             return;
         }
-        // Generate JWT
         const token = generateToken(user._id.toString());
         res.status(200).json({
             message: 'User signed in successfully',
@@ -154,21 +151,26 @@ const getUserProfile = (req, res) => __awaiter(void 0, void 0, void 0, function*
     }
 });
 exports.getUserProfile = getUserProfile;
-// UPDATE USER PROFILE
+// UPDATE USER PROFILE  (only the name, password and profile)
 const updateUserProfile = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
-    const { name, email, profileImageUrl } = req.body;
+    const { name, password } = req.body;
     try {
         const user = yield User_1.default.findById((_a = req.user) === null || _a === void 0 ? void 0 : _a.id);
         if (!user) {
             res.status(404).json({ message: 'User not found' });
             return;
         }
-        // Update user details
-        user.name = name || user.name;
-        user.email = email || user.email;
-        if (profileImageUrl)
-            user.profileImageUrl = profileImageUrl;
+        if (name) {
+            user.name = name;
+        }
+        if (password) {
+            const salt = yield bcryptjs_1.default.genSalt(10);
+            user.password = yield bcryptjs_1.default.hash(password, salt);
+        }
+        if (req.file) {
+            user.profileImageUrl = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
+        }
         yield user.save();
         res.status(200).json({
             message: 'Profile updated successfully',

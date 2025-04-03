@@ -40,9 +40,7 @@ app.use(cookieParser())
 // Before helmet, this is for the profile images
 app.use('/uploads', express.static('uploads'));
 
-app.use(helmet() as RequestHandler);
-
-
+// app.use(helmet() as RequestHandler);
 
 
 // ROUTES

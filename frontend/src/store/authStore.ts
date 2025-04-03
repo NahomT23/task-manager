@@ -40,10 +40,9 @@ export const useAuthStore = create<AuthState>((set) => ({
   logout: () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    // Optional: Add API call to invalidate token on server
+
     set({ token: null, user: null });
-    // If using React Router, you might want to navigate here
-    // or handle navigation in the component
+
   }
 }));
 

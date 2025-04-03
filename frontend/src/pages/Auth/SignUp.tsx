@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AiOutlineEye, AiOutlineEyeInvisible } from 'react-icons/ai';
-import { BsCloudUpload } from 'react-icons/bs'; // New import
+import { BsCloudUpload } from 'react-icons/bs';
 import { Link, useNavigate } from 'react-router-dom';
 import { SignUpSchema } from '../../formSchemas/authFormSchema';
 import { useSignUp } from '../../hooks/useSignUp';
@@ -124,13 +124,13 @@ const Signup: React.FC = () => {
   
   {/* Hidden actual file input */}
   <input
-    type="file"
-    id="profileImage"
-    {...register('profileImage')}
-    onChange={handleFileChange}
-    className="hidden"
-    accept="image/*"
-  />
+  type="file"
+  id="profileImage"
+  onChange={handleFileChange} 
+  className="hidden"
+  accept="image/*"
+/>
+
   
   {/* Custom upload button */}
   <div className="flex items-center space-x-3">

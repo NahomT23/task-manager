@@ -22,6 +22,7 @@ export interface SignUpResponse {
       organization?: string;
     };
   }
+
 export const useSignUp = () => {
   const setAuth = useAuthStore((state) => state.setAuth);
 
@@ -37,9 +38,7 @@ export const useSignUp = () => {
       if (data.profileImage && data.profileImage.length > 0) {
         formData.append('image', data.profileImage[0]);
       }
-      const response = await axiosInstance.post('/auth/sign-up', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      const response = await axiosInstance.post('/auth/sign-up', formData);
       return response.data;
     },
     onSuccess: (data) => {

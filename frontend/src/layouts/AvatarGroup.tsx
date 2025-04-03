@@ -33,7 +33,7 @@ const AvatarGroup = ({
   const remaining = avatars.length - maxVisible;
 
   return (
-    <div className="flex -space-x-2 ml-2">
+    <div className="flex -space-x-2 ml-1">
       {visibleAvatars.map((avatar, index) => (
         avatar.image ? (
           <img
