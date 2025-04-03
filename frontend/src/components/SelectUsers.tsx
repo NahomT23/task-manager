@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import axiosInstance from "../api/axiosInstance";
 import { LuUsers } from "react-icons/lu";
 import Modal from "../layouts/Modal";
-import AvatarGroup from "../layouts/AvatarGroup";
+import AvatarGroup, { getInitialsColor } from "../layouts/AvatarGroup";
+import { useThemeStore } from "../store/themeStore";
 
 interface User {
   _id: string;
@@ -17,6 +18,7 @@ interface SelectUsersProps {
 }
 
 const SelectUsers = ({ selectedUsers, setSelectedUsers }: SelectUsersProps) => {
+  const { isDarkMode } = useThemeStore();
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [tempSelectedUsers, setTempSelectedUsers] = useState<string[]>([]);
@@ -45,7 +47,10 @@ const SelectUsers = ({ selectedUsers, setSelectedUsers }: SelectUsersProps) => {
 
   const selectedUserAvatars = allUsers
     .filter(user => selectedUsers.includes(user._id))
-    .map(user => user.profileImageUrl || "/default-avatar.png"); // Fallback provided here too
+    .map(user => ({
+      image: user.profileImageUrl || undefined,
+      initials: user.name?.split(' ').slice(0, 2).map(word => word[0]).join('').toUpperCase() || ''
+    }));
 
   useEffect(() => {
     getAllUsers();
@@ -62,7 +67,11 @@ const SelectUsers = ({ selectedUsers, setSelectedUsers }: SelectUsersProps) => {
       {selectedUserAvatars.length === 0 ? (
         <button
           type="button"
-          className="card-btn"
+          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium border ${
+            isDarkMode 
+              ? 'bg-gray-800 text-white hover:bg-gray-700 border-gray-700' 
+              : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-200'
+          }`}
           onClick={() => setIsModalOpen(true)}
         >
           <LuUsers className="text-sm" /> Add Members
@@ -78,46 +87,78 @@ const SelectUsers = ({ selectedUsers, setSelectedUsers }: SelectUsersProps) => {
         onClose={() => setIsModalOpen(false)}
         title="Select Users"
       >
-        <div className="space-y-4 h-[60vh] overflow-auto">
-          {allUsers.map(user => (
-            <div
-              key={user._id}
-              className="flex items-center gap-4 p-3 border-b border-gray-200"
-            >
-              <img 
-                src={user.profileImageUrl || "/default-avatar.png"} 
-                alt={user.name}
-                className="w-10 h-10 rounded-full" 
-              />
-              <div className="flex-1">
-                <p className="font-medium text-gray-800 dark:text-white">
-                  {user.name}
-                </p>
-                <p className="text-[13px] text-gray-500">
-                  {user.email}
-                </p>
+        <div className={`space-y-4 h-[60vh] overflow-auto ${
+          isDarkMode ? 'bg-gray-900' : 'bg-white'
+        }`}>
+          {allUsers.map(user => {
+            const initials = user.name?.split(' ').slice(0, 2).map(word => word[0]).join('').toUpperCase() || '';
+            
+            return (
+              <div
+                key={user._id}
+                className={`flex items-center gap-4 p-3 border-b ${
+                  isDarkMode ? 'border-gray-700' : 'border-gray-200'
+                }`}
+              >
+                {user.profileImageUrl ? (
+                  <img 
+                    src={user.profileImageUrl} 
+                    alt={user.name}
+                    className="w-10 h-10 rounded-full" 
+                  />
+                ) : (
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-medium ${
+                    getInitialsColor(initials)
+                  }`}>
+                    <span>{initials}</span>
+                  </div>
+                )}
+                <div className="flex-1">
+                  <p className={`font-medium ${
+                    isDarkMode ? 'text-gray-100' : 'text-gray-800'
+                  }`}>
+                    {user.name}
+                  </p>
+                  <p className={`text-[13px] ${
+                    isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                  }`}>
+                    {user.email}
+                  </p>
+                </div>
+                <input 
+                  type="checkbox"
+                  checked={tempSelectedUsers.includes(user._id)}
+                  onChange={() => toggleUserSelection(user._id)} 
+                  className={`w-4 h-4 text-blue-600 rounded-sm outline-none ${
+                    isDarkMode 
+                      ? 'bg-gray-700 border-gray-600' 
+                      : 'bg-gray-100 border-gray-300'
+                  }`}
+                />
               </div>
-              <input 
-                type="checkbox"
-                checked={tempSelectedUsers.includes(user._id)}
-                onChange={() => toggleUserSelection(user._id)} 
-                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded-sm outline-none"
-              />
-            </div>
-          ))}
+            )}
+          )}
         </div>
 
         <div className="flex justify-end gap-4 pt-4">
           <button
             type="button"
-            className="card-btn"
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium border ${
+              isDarkMode 
+                ? 'bg-gray-800 text-white hover:bg-gray-700 border-gray-700' 
+                : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-200'
+            }`}
             onClick={() => setIsModalOpen(false)}
           >
             CANCEL
           </button>
           <button
             type="button"
-            className="card-btn-fill"
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium ${
+              isDarkMode 
+                ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+                : 'bg-blue-600 hover:bg-blue-700 text-white'
+            }`}
             onClick={handleAssign}
           >
             DONE

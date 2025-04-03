@@ -12,6 +12,8 @@ import SelectUsers from "../../components/SelectUsers";
 import TodoListInput from "../../components/TodoListInput";
 import AddAttachmentsInput from "../../components/AddAttachmentsInput";
 import { taskFormSchema, TaskFormValues } from "../../formSchemas/taskFormSchema";
+import { useThemeStore } from "../../store/themeStore";
+
 
 const defaultValues: TaskFormValues = {
   title: "",
@@ -31,6 +33,7 @@ const CreateTask = () => {
   const { state } = useLocation();
   const [openDeleteAlert, setOpenDeleteAlert] = useState(false);
   const isEditing = !!taskId;
+    const { isDarkMode } = useThemeStore();
 
   const { 
     handleSubmit,
@@ -217,8 +220,9 @@ const CreateTask = () => {
                   />
                 </div>
 
-                <div className="col-span-6 md:col-span-4">
-                  <label className="text-xs font-medium text-slate-600">
+
+                  <div className="col-span-6 md:col-span-4">
+                  <label className={`text-xs font-medium ${isDarkMode ? 'text-gray-400' : 'text-slate-600'}`}>
                     Due Date
                   </label>
                   <input
@@ -229,7 +233,7 @@ const CreateTask = () => {
                         : ""
                     }
                     {...register("dueDate", { valueAsDate: true })}
-                    className="form-input"
+                    className={`form-input ${isDarkMode ? 'bg-gray-800/50 text-gray-200' : ''}`}
                   />
                   {errors.dueDate && (
                     <p className="text-red-500 text-xs mt-1">{errors.dueDate.message}</p>
@@ -249,6 +253,8 @@ const CreateTask = () => {
                   )}
                 </div>
               </div>
+
+
 
               {/* Todo Checklist */}
               <div className="mt-3">
@@ -320,6 +326,7 @@ const CreateTask = () => {
       )}
     </DashboardLayout>
   );
+  
 };
 
 export default CreateTask;

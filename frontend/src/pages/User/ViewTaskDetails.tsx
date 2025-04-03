@@ -6,6 +6,7 @@ import moment from "moment";
 import AvatarGroup from "../../layouts/AvatarGroup";
 import { LuSquareArrowDownRight } from "react-icons/lu";
 import UsersTaskSkeleton from "../../components/skeleton/UsersTaskSkeleton";
+import { useThemeStore } from "../../store/themeStore";
 
 interface TodoItem {
   text: string;
@@ -35,6 +36,7 @@ interface Task {
 const ViewTaskDetails = () => {
   const { id } = useParams<{ id: string }>();
   const [task, setTask] = useState<Task | null>(null);
+  const { isDarkMode } = useThemeStore();
 
   const getStatusTagColor = (status: Task["status"]) => {
     switch (status) {
@@ -115,17 +117,26 @@ const ViewTaskDetails = () => {
               </div>
 
               <div className="mt-4">
-                <InfoBox label="Description" value={task.description} />
+                <InfoBox
+                  label="Description"
+                  value={task.description}
+                  isDarkMode={isDarkMode}
+                />
               </div>
 
               <div className="grid grid-cols-12 gap-4 mt-4">
                 <div className="col-span-6 md:col-span-4">
-                  <InfoBox label="Priority" value={task.priority} />
+                  <InfoBox
+                    label="Priority"
+                    value={task.priority}
+                    isDarkMode={isDarkMode}
+                  />
                 </div>
                 <div className="col-span-6 md:col-span-4">
                   <InfoBox
                     label="Due Date"
                     value={task.dueDate ? moment(task.dueDate).format("Do MMM YYYY") : "N/A"}
+                    isDarkMode={isDarkMode}
                   />
                 </div>
                 <div className="col-span-6 md:col-span-4">
@@ -175,12 +186,17 @@ const ViewTaskDetails = () => {
 interface InfoBoxProps {
   label: string;
   value: string;
+  isDarkMode: boolean;
 }
 
-const InfoBox = ({ label, value }: InfoBoxProps) => (
+const InfoBox = ({ label, value, isDarkMode }: InfoBoxProps) => (
   <div className="mb-4">
-    <label className="text-xs text-slate-500 font-medium">{label}</label>
-    <p className="text-[13px] md:text-[13px] font-medium text-gray-700 mt-0.5">{value}</p>
+    <label className={`text-xs ${isDarkMode ? "text-gray-200" : "text-slate-500"} font-medium`}>
+      {label}
+    </label>
+    <p className={`text-[13px] md:text-[13px] font-medium ${isDarkMode ? "text-white" : "text-gray-700"} mt-0.5`}>
+      {value}
+    </p>
   </div>
 );
 
@@ -189,7 +205,6 @@ interface TodoCheckListProps {
   isChecked: boolean;
   onChange: () => void;
 }
-
 const TodoCheckList = ({ text, isChecked, onChange }: TodoCheckListProps) => (
   <div className="flex items-center gap-3 p-3">
     <input
@@ -201,6 +216,8 @@ const TodoCheckList = ({ text, isChecked, onChange }: TodoCheckListProps) => (
     <p className="text-[13px] text-gray-800">{text}</p>
   </div>
 );
+
+
 
 interface AttachmentProps {
   link: string;

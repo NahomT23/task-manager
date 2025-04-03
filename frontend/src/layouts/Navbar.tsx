@@ -1,32 +1,71 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import SideMenu from "./SideMenu";
-import { HiOutlineMenu, HiOutlineX } from 'react-icons/hi';
+import { HiOutlineMenu, HiOutlineX, HiOutlineMoon, HiOutlineSun } from 'react-icons/hi';
+import { useThemeStore } from "../store/themeStore";
 
 interface NavbarProps {
   activeMenu: string;
 }
 
 const Navbar = ({ activeMenu }: NavbarProps) => {
+  const { isDarkMode, toggleDarkMode } = useThemeStore();
   const [openSideMenu, setOpenSideMenu] = useState(false);
 
+  useEffect(() => {
+    document.body.classList.toggle('dark', isDarkMode);
+  }, [isDarkMode]);
+
   return (
-    <div className="flex gap-5 bg-white border-b border-gray-200/50 backdrop-blur-[2px] py-4 px-7">
+    <div className={`
+      fixed top-0 left-0 right-0 z-50
+      flex gap-5 backdrop-blur-[2px] py-4 px-7 border-b
+      ${isDarkMode 
+        ? 'bg-black border-gray-800' 
+        : 'bg-white/90 border-gray-200/50'
+      }
+    `}>
+      {/* Left side menu button */}
       <button
-        className="block lg:hidden text-black"
+        className={`
+          block lg:hidden text-2xl transition-colors
+          ${isDarkMode 
+            ? 'text-gray-100 hover:text-gray-300' 
+            : 'text-gray-700 hover:text-gray-900'
+          }
+        `}
         onClick={() => setOpenSideMenu(!openSideMenu)}
       >
-        {openSideMenu ? (
-          <HiOutlineX className="text-2xl" />
-        ) : (
-          <HiOutlineMenu className="text-2xl" />
-        )}
+        {openSideMenu ? <HiOutlineX /> : <HiOutlineMenu />}
       </button>
-      <h2 className="text-lg font-medium text-black">
+      
+      {/* Title */}
+      <h2 className={`
+        text-lg font-medium transition-colors
+        ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}
+      `}>
         Task Manager
       </h2>
 
+      {/* Dark mode toggle */}
+      <button
+        className={`
+          ml-auto text-2xl transition-colors
+          ${isDarkMode 
+            ? 'text-gray-100 hover:text-gray-300' 
+            : 'text-gray-700 hover:text-gray-900'
+          }
+        `}
+        onClick={toggleDarkMode}
+      >
+        {isDarkMode ? <HiOutlineSun /> : <HiOutlineMoon />}
+      </button>
+
+      {/* Mobile menu */}
       {openSideMenu && (
-        <div className="fixed top-[61px] -ml-4 bg-white">
+        <div className={`
+          fixed top-[61px] left-0 right-0 z-40
+          ${isDarkMode ? 'bg-gray-900' : 'bg-white'}
+        `}>
           <SideMenu activeMenu={activeMenu} />
         </div>
       )}

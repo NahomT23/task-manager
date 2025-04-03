@@ -2,10 +2,11 @@ import React from "react";
 import { LuPaperclip } from "react-icons/lu";
 import moment from "moment";
 import AvatarGroup from "../../layouts/AvatarGroup";
+import { useThemeStore } from "../../store/themeStore";
 
 interface AssignedUser {
   _id: string;
-  profileImageUrl: string;
+  profileImageUrl?: string;
   name?: string;
 }
 
@@ -36,8 +37,10 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   assignedTo,
   attachmentCount,
   todoChecklist = [],
-  onClick
+  onClick,
 }) => {
+  const { isDarkMode } = useThemeStore();
+
   const getStatusTagColor = () => {
     switch (status) {
       case "inProgress":
@@ -62,75 +65,161 @@ export const TaskCard: React.FC<TaskCardProps> = ({
 
   const actualCompleted = todoChecklist.filter((item) => item.completed).length;
   const totalTodos = todoChecklist.length;
-
-
-  // duration calulation
   const durationDays = moment(dueDate).diff(moment(createdAt), "days");
+
+  // Generate avatar data for the assigned users:
+  const avatarData = assignedTo.map((user) => ({
+    image: user.profileImageUrl || undefined,
+    initials: user.name
+      ? user.name.split(" ").slice(0, 2).map((word) => word[0]).join("").toUpperCase()
+      : "",
+  }));
 
   return (
     <div
-      className="bg-white rounded-xl py-4 shadow-md shadow-gray-100 border border-gray-200/50 cursor-pointer"
+      className={`rounded-xl py-4 shadow-md border cursor-pointer ${
+        isDarkMode
+          ? "bg-gray-900 border-gray-700 shadow-gray-800/20"
+          : "bg-white border-gray-200/50 shadow-gray-100"
+      }`}
       onClick={onClick}
     >
       <div className="flex items-end gap-3 px-4">
-        <div className={`text-[11px] font-medium ${getStatusTagColor()} px-4 py-0.5 rounded`}>
+        <div
+          className={`text-[11px] font-medium px-4 py-0.5 rounded ${
+            isDarkMode
+              ? getStatusTagColor()
+                  .replace(/bg-(.*?)\s/, "bg-opacity-20 ")
+                  .replace("border", "border-0") + " bg-gray-800"
+              : getStatusTagColor()
+          }`}
+        >
           {status}
         </div>
 
-        <div className={`text-[11px] font-medium ${getPriorityTagColor()} px-4 py-0.5 rounded`}>
+        <div
+          className={`text-[11px] font-medium px-4 py-0.5 rounded ${
+            isDarkMode
+              ? getPriorityTagColor()
+                  .replace(/bg-(.*?)\s/, "bg-opacity-20 ")
+                  .replace("border", "border-0") + " bg-gray-800"
+              : getPriorityTagColor()
+          }`}
+        >
           {priority} Priority
         </div>
       </div>
 
       <div
         className={`px-4 border-l-[5px] 
-          ${status === "inProgress" ? "border-cyan-500" : status === "completed" ? "border-indigo-500" : "border-violet-500"}`}
+          ${
+            status === "inProgress"
+              ? "border-cyan-500"
+              : status === "completed"
+              ? "border-indigo-500"
+              : "border-violet-500"
+          }`}
       >
-        <p className="text-sm font-medium text-gray-800 mt-4 line-clamp-2">
+        <p
+          className={`text-sm font-medium mt-4 line-clamp-2 ${
+            isDarkMode ? "text-gray-100" : "text-gray-800"
+          }`}
+        >
           {title}
         </p>
-        <p className="text-xs text-gray-500 mt-1.5 line-clamp-2 leading-[18px]">
+        <p
+          className={`text-xs mt-1.5 line-clamp-2 leading-[18px] ${
+            isDarkMode ? "text-gray-400" : "text-gray-500"
+          }`}
+        >
           {description}
         </p>
-        <p className="text-[13px] text-gray-700/80 font-medium mt-2 mb-2 leading-[18px]">
+        <p
+          className={`text-[13px] font-medium mt-2 mb-2 leading-[18px] ${
+            isDarkMode ? "text-gray-300/80" : "text-gray-700/80"
+          }`}
+        >
           Task Done{" "}
-          <span className="font-semibold text-gray-700">
+          <span
+            className={`font-semibold ${
+              isDarkMode ? "text-gray-200" : "text-gray-700"
+            }`}
+          >
             {actualCompleted} / {totalTodos}
           </span>
         </p>
-        <Progress progress={progress} status={status} />
+        <Progress progress={progress} status={status} isDarkMode={isDarkMode} />
       </div>
 
       <div className="px-4">
         <div className="flex items-center justify-between my-1">
           <div>
-            <label className="text-xs text-gray-500">Start Date</label>
-            <p className="text-[13px] font-medium text-gray-900">
+            <label
+              className={`text-xs ${
+                isDarkMode ? "text-gray-400" : "text-gray-500"
+              }`}
+            >
+              Start Date
+            </label>
+            <p
+              className={`text-[13px] font-medium ${
+                isDarkMode ? "text-gray-200" : "text-gray-900"
+              }`}
+            >
               {moment(createdAt).format("Do MMM YYYY")}
             </p>
           </div>
         </div>
         <div>
-          <label className="text-xs text-gray-500">Due Date</label>
-          <p className="text-[13px] font-medium text-gray-900">
+          <label
+            className={`text-xs ${
+              isDarkMode ? "text-gray-400" : "text-gray-500"
+            }`}
+          >
+            Due Date
+          </label>
+          <p
+            className={`text-[13px] font-medium ${
+              isDarkMode ? "text-gray-200" : "text-gray-900"
+            }`}
+          >
             {moment(dueDate).format("Do MMM YYYY")}
           </p>
         </div>
-        {/* New Duration Row */}
         <div className="mt-2">
-          <label className="text-xs text-gray-500">Duration</label>
-          <p className="text-[13px] font-medium text-gray-900">
+          <label
+            className={`text-xs ${
+              isDarkMode ? "text-gray-400" : "text-gray-500"
+            }`}
+          >
+            Duration
+          </label>
+          <p
+            className={`text-[13px] font-medium ${
+              isDarkMode ? "text-gray-200" : "text-gray-900"
+            }`}
+          >
             {durationDays} {durationDays === 1 ? "day" : "days"}
           </p>
         </div>
       </div>
 
       <div className="flex items-center justify-between mt-3 px-4">
-        <AvatarGroup avatars={assignedTo.map((user) => user.profileImageUrl)} />
+        <AvatarGroup avatars={avatarData} isDarkMode={isDarkMode} />
         {attachmentCount > 0 && (
-          <div className="flex items-center gap-2 bg-blue-50 px-2.5 py-1.5 rounded-lg">
-            <LuPaperclip className="text-blue-900" />{" "}
-            <span className="text-xs text-gray-900 ">{attachmentCount}</span>
+          <div
+            className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg ${
+              isDarkMode ? "bg-blue-900/30" : "bg-blue-50"
+            }`}
+          >
+            <LuPaperclip className={isDarkMode ? "text-blue-400" : "text-blue-900"} />
+            <span
+              className={`text-xs ${
+                isDarkMode ? "text-gray-300" : "text-gray-900"
+              }`}
+            >
+              {attachmentCount}
+            </span>
           </div>
         )}
       </div>
@@ -141,9 +230,10 @@ export const TaskCard: React.FC<TaskCardProps> = ({
 interface ProgressProps {
   progress: number;
   status: string;
+  isDarkMode: boolean;
 }
 
-const Progress: React.FC<ProgressProps> = ({ progress, status }) => {
+const Progress: React.FC<ProgressProps> = ({ progress, status, isDarkMode }) => {
   const getColor = () => {
     switch (status) {
       case "inProgress":
@@ -156,7 +246,11 @@ const Progress: React.FC<ProgressProps> = ({ progress, status }) => {
   };
 
   return (
-    <div className="w-full bg-gray-200 rounded-full h-1.5">
+    <div
+      className={`w-full rounded-full h-1.5 ${
+        isDarkMode ? "bg-gray-700" : "bg-gray-200"
+      }`}
+    >
       <div
         className={`${getColor()} h-1.5 rounded-full transition-all duration-300`}
         style={{ width: `${progress}%` }}
@@ -164,5 +258,3 @@ const Progress: React.FC<ProgressProps> = ({ progress, status }) => {
     </div>
   );
 };
-
-export { Progress };

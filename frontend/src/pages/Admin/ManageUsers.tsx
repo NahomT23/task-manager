@@ -19,7 +19,7 @@ interface User {
 const ManageUsers = () => {
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [loading, setLoading] = useState(true); // Add a loading state
+  const [loading, setLoading] = useState(true);
 
   const getAllUsers = async () => {
     try {

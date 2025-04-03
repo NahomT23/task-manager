@@ -11,6 +11,7 @@ import CustomBarChart from "../../components/Charts/CustomBarChart";
 import axiosInstance from "../../api/axiosInstance";
 import { IoMdCard } from "react-icons/io";
 import CountUp from 'react-countup';
+import Loading from "../../components/Loading";
 
 interface DashboardData {
   charts: {
@@ -134,6 +135,10 @@ const Dashboard = () => {
 
   return (
     <DashboardLayout activeMenu="Dashboard">
+    {isLoading ? (
+      <Loading text="Loading dashboard..." />
+    ) : (
+      <>
       <div className="card my-5">
         <div>
           <div className="col-span-3">
@@ -233,6 +238,8 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
+      </>
+  )}
     </DashboardLayout>
   );
 };

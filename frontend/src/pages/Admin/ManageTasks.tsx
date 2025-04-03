@@ -1,3 +1,4 @@
+
 import { useEffect, useState, useMemo } from "react";
 import DashboardLayout from "../../layouts/DashboardLayout";
 import { useNavigate } from "react-router-dom";
@@ -7,6 +8,7 @@ import TaskStatusTabs from "../../components/TaskStatusTabs";
 import { TaskCard } from "../../components/Cards/TaskCard";
 import { toast } from "react-toastify";
 import TaskCardSkeleton from "../../components/skeleton/TaskCardSkeleton";
+import { useThemeStore } from "../../store/themeStore";
 
 interface Task {
   _id: string;
@@ -20,7 +22,7 @@ interface Task {
   dueDate: string;
   assignedTo: Array<{ 
     _id: string;
-    profileImageUrl: string;
+    profileImageUrl?: string;
     name?: string;
   }>;
   attachments: any[];
@@ -48,6 +50,7 @@ const ManageTasks = () => {
   const [sortOption, setSortOption] = useState<string | null>(null);
   const [isSortPopupOpen, setIsSortPopupOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const { isDarkMode } = useThemeStore();
   const navigate = useNavigate();
 
   const fetchTasks = async () => {
@@ -75,14 +78,14 @@ const ManageTasks = () => {
     navigate(`/admin/create-task/${task._id}`, { state: { task } });
   };
 
-  const handleDownloadReport = async (format: 'excel' | 'pdf') => {
+  const handleDownloadReport = async (format: "excel" | "pdf") => {
     try {
       const response = await axiosInstance.get(`/reports/export/tasks?type=${format}`, {
-        responseType: "blob"
+        responseType: "blob",
       });
-      const contentType = response.headers['content-type'];
-      
-      if (contentType.includes('application/json')) {
+      const contentType = response.headers["content-type"];
+
+      if (contentType.includes("application/json")) {
         const reader = new FileReader();
         reader.onload = () => {
           try {
@@ -96,11 +99,11 @@ const ManageTasks = () => {
         return;
       }
 
-      const extension = format === 'excel' ? 'xlsx' : 'pdf';
+      const extension = format === "excel" ? "xlsx" : "pdf";
       const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = url;
-      link.setAttribute('download', `task_details.${extension}`);
+      link.setAttribute("download", `task_details.${extension}`);
       document.body.appendChild(link);
       link.click();
       link.parentNode?.removeChild(link);
@@ -134,11 +137,17 @@ const ManageTasks = () => {
           case "todos":
             return (b.todoChecklist?.length || 0) - (a.todoChecklist?.length || 0);
           case "dueDateLongest":
-            return (new Date(b.dueDate).getTime() - new Date(b.createdAt).getTime()) - 
-                   (new Date(a.dueDate).getTime() - new Date(a.createdAt).getTime());
+            return (
+              new Date(b.dueDate).getTime() -
+              new Date(b.createdAt).getTime() -
+              (new Date(a.dueDate).getTime() - new Date(a.createdAt).getTime())
+            );
           case "dueDateShortest":
-            return (new Date(a.dueDate).getTime() - new Date(a.createdAt).getTime()) - 
-                   (new Date(b.dueDate).getTime() - new Date(b.createdAt).getTime());
+            return (
+              new Date(a.dueDate).getTime() -
+              new Date(a.createdAt).getTime() -
+              (new Date(b.dueDate).getTime() - new Date(b.createdAt).getTime())
+            );
           default:
             return 0;
         }
@@ -161,17 +170,11 @@ const ManageTasks = () => {
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-xl md:text-xl font-medium">My Tasks</h2>
               <div className="flex lg:hidden gap-2">
-                <button
-                  onClick={() => handleDownloadReport('excel')}
-                  className="flex download-btn"
-                >
+                <button onClick={() => handleDownloadReport("excel")} className="flex download-btn">
                   <LuFileSpreadsheet className="text-lg" />
                   <span>Excel</span>
                 </button>
-                <button
-                  onClick={() => handleDownloadReport('pdf')}
-                  className="flex download-btn bg-red-600 hover:bg-red-700"
-                >
+                <button onClick={() => handleDownloadReport("pdf")} className="flex download-btn bg-red-600 hover:bg-red-700">
                   <LuFileSpreadsheet className="text-lg" />
                   <span>PDF</span>
                 </button>
@@ -197,17 +200,11 @@ const ManageTasks = () => {
               setActiveTab={setFilterStatus}
             />
             <div className="hidden lg:flex gap-2">
-              <button
-                onClick={() => handleDownloadReport('excel')}
-                className="flex download-btn"
-              >
+              <button onClick={() => handleDownloadReport("excel")} className="flex download-btn">
                 <LuFileSpreadsheet className="text-lg" />
                 <span>Excel</span>
               </button>
-              <button
-                onClick={() => handleDownloadReport('pdf')}
-                className="flex download-btn bg-red-600 hover:bg-red-700"
-              >
+              <button onClick={() => handleDownloadReport("pdf")} className="flex download-btn bg-red-600 hover:bg-red-700">
                 <LuFileSpreadsheet className="text-lg" />
                 <span>PDF</span>
               </button>
@@ -215,71 +212,49 @@ const ManageTasks = () => {
             <div className="relative">
               <button
                 onClick={() => setIsSortPopupOpen((prev) => !prev)}
-                className="px-4 py-2 border rounded-md hover:bg-gray-100"
+                className={`px-4 py-2 border rounded-md ${
+                  isDarkMode ? "hover:bg-gray-700 text-gray-200" : "hover:bg-gray-100 text-gray-800"
+                }`}
               >
                 Sort
               </button>
               {isSortPopupOpen && (
-                <div className="absolute right-0 mt-2 w-64 bg-white border rounded-md shadow-lg z-10">
+                <div
+                  className={`absolute right-0 mt-2 w-64 rounded-md shadow-lg z-10 ${
+                    isDarkMode ? "bg-gray-800 border border-gray-700" : "bg-white border border-gray-200"
+                  }`}
+                >
                   <div className="p-3">
-                    <p className="mb-2 font-medium">Sort Options</p>
+                    <p className={`mb-2 font-medium ${isDarkMode ? "text-gray-200" : "text-gray-800"}`}>
+                      Sort Options
+                    </p>
                     <ul className="space-y-1">
-                      <li>
-                        <button
-                          onClick={() => handleSortSelection("mostAssigned")}
-                          className="w-full text-left hover:bg-gray-200 px-2 py-1 rounded"
-                        >
-                          Most Assigned To
-                        </button>
-                      </li>
-                      <li>
-                        <button
-                          onClick={() => handleSortSelection("date")}
-                          className="w-full text-left hover:bg-gray-200 px-2 py-1 rounded"
-                        >
-                          Date (Newest First)
-                        </button>
-                      </li>
-                      <li>
-                        <button
-                          onClick={() => handleSortSelection("progress")}
-                          className="w-full text-left hover:bg-gray-200 px-2 py-1 rounded"
-                        >
-                          Progress
-                        </button>
-                      </li>
-                      <li>
-                        <button
-                          onClick={() => handleSortSelection("attachments")}
-                          className="w-full text-left hover:bg-gray-200 px-2 py-1 rounded"
-                        >
-                          Attachments
-                        </button>
-                      </li>
-                      <li>
-                        <button
-                          onClick={() => handleSortSelection("todos")}
-                          className="w-full text-left hover:bg-gray-200 px-2 py-1 rounded"
-                        >
-                          Todos
-                        </button>
-                      </li>
-                      <li>
-                        <button
-                          onClick={() => handleSortSelection("dueDateLongest")}
-                          className="w-full text-left hover:bg-gray-200 px-2 py-1 rounded"
-                        >
-                          Due Date Difference (Longest)
-                        </button>
-                      </li>
-                      <li>
-                        <button
-                          onClick={() => handleSortSelection("dueDateShortest")}
-                          className="w-full text-left hover:bg-gray-200 px-2 py-1 rounded"
-                        >
-                          Due Date Difference (Shortest)
-                        </button>
-                      </li>
+                      {[
+                        "mostAssigned",
+                        "date",
+                        "progress",
+                        "attachments",
+                        "todos",
+                        "dueDateLongest",
+                        "dueDateShortest",
+                      ].map((option) => (
+                        <li key={option}>
+                          <button
+                            onClick={() => handleSortSelection(option)}
+                            className={`w-full text-left px-2 py-1 rounded ${
+                              isDarkMode ? "text-gray-200 hover:bg-gray-700" : "text-gray-800 hover:bg-gray-200"
+                            }`}
+                          >
+                            {option === "dueDateLongest"
+                              ? "Due Date Difference (Longest)"
+                              : option === "dueDateShortest"
+                              ? "Due Date Difference (Shortest)"
+                              : option === "mostAssigned"
+                              ? "Most Assigned To"
+                              : option.charAt(0).toUpperCase() + option.slice(1)}
+                          </button>
+                        </li>
+                      ))}
                     </ul>
                   </div>
                 </div>
@@ -290,9 +265,7 @@ const ManageTasks = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
           {loading ? (
-            Array.from({ length: 6 }).map((_, index) => (
-              <TaskCardSkeleton key={index} />
-            ))
+            Array.from({ length: 6 }).map((_, index) => <TaskCardSkeleton key={index} />)
           ) : filteredAndSortedTasks.length > 0 ? (
             filteredAndSortedTasks.map((task) => (
               <TaskCard
@@ -308,6 +281,7 @@ const ManageTasks = () => {
                 assignedTo={task.assignedTo.map((user) => ({
                   _id: user._id,
                   profileImageUrl: user.profileImageUrl,
+                  name: user.name,
                 }))}
                 attachmentCount={task.attachments?.length || 0}
                 completedTodo={task.completedTodoCount || 0}

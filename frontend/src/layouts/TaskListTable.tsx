@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import moment from "moment";
+import { useThemeStore } from "../store/themeStore";
 
 interface TaskListTableProps {
   tableData: Array<{
@@ -23,6 +24,9 @@ const TaskListTable = ({ tableData }: TaskListTableProps) => {
 
 
   const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
+  const { isDarkMode } = useThemeStore();
+  
+
 
 
   const requestSort = (key: string) => {
@@ -101,32 +105,48 @@ const TaskListTable = ({ tableData }: TaskListTableProps) => {
   };
 
   return (
-    <div>
-      <div className="overflow-x-auto p-0 rounded-lg mt-3">
+    <div className={`rounded-lg ${isDarkMode ? 'bg-gray-900' : 'bg-white'}`}>
+      <div className={`overflow-x-auto ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
         <table className="min-w-full">
           <thead>
-            <tr className="text-left">
+            <tr className={`text-left ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>
               <th
                 onClick={() => requestSort("title")}
-                className="cursor-pointer py-3 px-4 text-gray-800 font-medium text-[13px]"
+                className={`cursor-pointer py-3 px-4 font-medium text-[13px] ${
+                  isDarkMode 
+                    ? 'hover:bg-gray-800/50' 
+                    : 'hover:bg-gray-100'
+                }`}
               >
                 Name {getSortIndicator("title")}
               </th>
               <th
                 onClick={() => requestSort("status")}
-                className="cursor-pointer py-3 px-4 text-gray-800 font-medium text-[13px]"
+                className={`cursor-pointer py-3 px-4 font-medium text-[13px] ${
+                  isDarkMode 
+                    ? 'hover:bg-gray-800/50' 
+                    : 'hover:bg-gray-100'
+                }`}
               >
                 Status {getSortIndicator("status")}
               </th>
               <th
                 onClick={() => requestSort("priority")}
-                className="cursor-pointer py-3 px-4 text-gray-800 font-medium text-[13px]"
+                className={`cursor-pointer py-3 px-4 font-medium text-[13px] ${
+                  isDarkMode 
+                    ? 'hover:bg-gray-800/50' 
+                    : 'hover:bg-gray-100'
+                }`}
               >
                 Priority {getSortIndicator("priority")}
               </th>
               <th
                 onClick={() => requestSort("createdAt")}
-                className="cursor-pointer py-3 px-4 text-gray-800 font-medium text-[13px] hidden md:table-cell"
+                className={`cursor-pointer py-3 px-4 font-medium text-[13px] hidden md:table-cell ${
+                  isDarkMode 
+                    ? 'hover:bg-gray-800/50' 
+                    : 'hover:bg-gray-100'
+                }`}
               >
                 Created On {getSortIndicator("createdAt")}
               </th>
@@ -134,29 +154,36 @@ const TaskListTable = ({ tableData }: TaskListTableProps) => {
           </thead>
           <tbody>
             {paginatedData.map((task) => (
-              <tr key={task.id} className="border-t border-gray-200">
-                <td className="py-2 px-4 text-gray-700 text-[13px] line-clamp-1 overflow-hidden">
+              <tr 
+                key={task.id} 
+                className={`border-t ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}
+              >
+                <td className={`py-2 px-4 text-[13px] line-clamp-1 overflow-hidden ${
+                  isDarkMode ? 'text-gray-200' : 'text-gray-700'
+                }`}>
                   {task.title}
                 </td>
                 <td className="py-2 px-4">
                   <span
-                    className={`px-2 py-1 text-xs rounded inline-block ${getStatusBadgeColor(
-                      task.status
-                    )}`}
+                    className={`px-2 py-1 text-xs rounded inline-block ${getStatusBadgeColor(task.status)} ${
+                      isDarkMode && 'text-opacity-90'
+                    }`}
                   >
                     {task.status}
                   </span>
                 </td>
                 <td className="py-2 px-4">
                   <span
-                    className={`px-2 py-1 text-xs rounded inline-block ${getPriorityBadgeColor(
-                      task.priority
-                    )}`}
+                    className={`px-2 py-1 text-xs rounded inline-block ${getPriorityBadgeColor(task.priority)} ${
+                      isDarkMode && 'text-opacity-90'
+                    }`}
                   >
                     {task.priority}
                   </span>
                 </td>
-                <td className="py-2 px-4 text-gray-700 text-[13px] text-nowrap hidden md:table-cell">
+                <td className={`py-2 px-4 text-[13px] text-nowrap hidden md:table-cell ${
+                  isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                }`}>
                   {task.createdAt ? moment(task.createdAt).format("Do MMM YYYY") : "N/A"}
                 </td>
               </tr>
@@ -165,13 +192,17 @@ const TaskListTable = ({ tableData }: TaskListTableProps) => {
         </table>
       </div>
 
-      {/* Pagination controls: only render if there are more than 6 tasks */}
       {tableData.length > itemsPerPage && (
-        <div className="flex items-center justify-end mt-4 space-x-2">
+        <div className={`flex items-center justify-end mt-4 space-x-2 ${
+          isDarkMode ? 'text-gray-300' : 'text-gray-700'
+        }`}>
           {currentPage > 1 && (
             <button
               onClick={() => setCurrentPage((prev) => prev - 1)}
-              className="px-3 py-1 text-sm bg-gray-200 rounded hover:bg-gray-300"
+              className={`px-3 py-1 text-sm rounded ${isDarkMode 
+                ? 'bg-gray-700 hover:bg-gray-600' 
+                : 'bg-gray-200 hover:bg-gray-300'
+              }`}
             >
               Prev
             </button>
@@ -182,7 +213,10 @@ const TaskListTable = ({ tableData }: TaskListTableProps) => {
           {currentPage < totalPages && (
             <button
               onClick={() => setCurrentPage((prev) => prev + 1)}
-              className="px-3 py-1 text-sm bg-gray-200 rounded hover:bg-gray-300"
+              className={`px-3 py-1 text-sm rounded ${isDarkMode 
+                ? 'bg-gray-700 hover:bg-gray-600' 
+                : 'bg-gray-200 hover:bg-gray-300'
+              }`}
             >
               Next
             </button>
@@ -192,5 +226,4 @@ const TaskListTable = ({ tableData }: TaskListTableProps) => {
     </div>
   );
 };
-
 export default TaskListTable;

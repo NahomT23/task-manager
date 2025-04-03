@@ -11,9 +11,7 @@ import UserDashboard from './pages/User/UserDashboard'
 import MyTasks from './pages/User/MyTasks'
 import ViewTaskDetails from './pages/User/ViewTaskDetails'
 import Setup from './pages/setup/Setup'
-
 import { ToastContainer } from 'react-toastify'
-import DashboardLayout from './layouts/DashboardLayout'
 import UserDetails from './pages/Admin/UserDetails'
 
 function App() {
