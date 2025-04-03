@@ -1,15 +1,12 @@
 import { ReactNode } from "react";
 import { useThemeStore } from "../../store/themeStore";
 
-
 interface InfoCardProps {
   icon: ReactNode;
   label: string;
   value: ReactNode; 
   color: string;
 }
-
-
 
   const InfoCard = ({ icon, label, value, color }: InfoCardProps) => {
     const { isDarkMode } = useThemeStore();

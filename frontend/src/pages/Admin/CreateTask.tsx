@@ -33,7 +33,7 @@ const CreateTask = () => {
   const { state } = useLocation();
   const [openDeleteAlert, setOpenDeleteAlert] = useState(false);
   const isEditing = !!taskId;
-    const { isDarkMode } = useThemeStore();
+  const { isDarkMode } = useThemeStore();
 
   const { 
     handleSubmit,
@@ -50,10 +50,9 @@ const CreateTask = () => {
 
   const currentTask = watch();
 
-  // When taskId changes, reset the form if we are in create mode.
+
   useEffect(() => {
     if (!taskId) {
-      // If there's no taskId (create mode), clear form data.
       reset(defaultValues);
     }
   }, [taskId, reset]);
@@ -285,14 +284,21 @@ const CreateTask = () => {
               </div>
 
               {/* Submit Button */}
-              <div className="flex justify-end mt-7">
-                <button
-                  type="submit"
-                  className="add-btn cursor-pointer"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? "Processing..." : isEditing ? "UPDATE TASK" : "CREATE TASK"}
-                </button>
+              <div className="flex justify-end mt-7 mb-5">
+
+<button
+  type="submit"
+  className={`${
+    isDarkMode
+      ? 'bg-gray-800 hover:bg-gray-700 text-white'
+      : 'bg-blue-600 hover:bg-blue-700 text-white'
+  } px-4 py-2 rounded-md shadow transition duration-200 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed`}
+  disabled={isSubmitting}
+>
+  {isSubmitting ? "Processing..." : isEditing ? "UPDATE TASK" : "CREATE TASK"}
+</button>
+
+
               </div>
             </div>
           </div>
@@ -301,29 +307,54 @@ const CreateTask = () => {
 
       {/* Delete confirmation modal */}
       {openDeleteAlert && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
-          <div className="bg-white rounded-lg p-6 max-w-sm">
-            <h3 className="text-lg font-medium">Delete Task</h3>
-            <p className="text-gray-600 mt-2">
-              Are you sure you want to delete this task? This action cannot be undone.
-            </p>
-            <div className="flex justify-end gap-3 mt-4">
-              <button
-                onClick={() => setOpenDeleteAlert(false)}
-                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={deleteTask}
-                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center backdrop-blur-sm z-50">
+    <div
+      className={`w-full max-w-sm p-6 rounded-xl shadow-2xl transition-transform transform ${
+        isDarkMode ? 'bg-gray-800 text-gray-200' : 'bg-white text-gray-900'
+      }`}
+    >
+      {/* Header */}
+      <div className="flex justify-between items-center border-b pb-3">
+        <h3 className="text-lg font-bold">Delete Task</h3>
+        <button
+          onClick={() => setOpenDeleteAlert(false)}
+          className="text-2xl font-semibold focus:outline-none"
+        >
+          &times;
+        </button>
+      </div>
+
+      {/* Body */}
+      <div className="mt-4">
+        <p className="text-base">
+          Are you sure you want to delete this task{' '}
+          <span className="font-semibold"></span>? This action cannot be undone.
+        </p>
+      </div>
+
+      {/* Footer */}
+      <div className="mt-6 flex justify-end space-x-3">
+        <button
+          onClick={() => setOpenDeleteAlert(false)}
+          className={`px-4 py-2 rounded-md transition-colors duration-200 ${
+            isDarkMode
+              ? 'bg-gray-700 hover:bg-gray-600'
+              : 'bg-gray-200 hover:bg-gray-300'
+          }`}
+        >
+          Cancel
+        </button>
+        <button
+          onClick={deleteTask}
+          className="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700 transition-colors duration-200"
+        >
+          Delete
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
     </DashboardLayout>
   );
   

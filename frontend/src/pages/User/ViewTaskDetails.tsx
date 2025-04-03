@@ -142,7 +142,10 @@ const ViewTaskDetails = () => {
                 <div className="col-span-6 md:col-span-4">
                   <label className="text-xs font-medium text-slate-500">Assigned To</label>
                   <AvatarGroup
-                    avatars={task.assignedTo.map(item => item.profileImageUrl)}
+                    avatars={task.assignedTo.map((item) => ({
+                      image: item.profileImageUrl,
+                      initials: item.name ? item.name.split(" ").map((n) => n[0]).join("") : "NA",
+                    }))}
                     maxVisible={5}
                   />
                 </div>
@@ -216,8 +219,6 @@ const TodoCheckList = ({ text, isChecked, onChange }: TodoCheckListProps) => (
     <p className="text-[13px] text-gray-800">{text}</p>
   </div>
 );
-
-
 
 interface AttachmentProps {
   link: string;

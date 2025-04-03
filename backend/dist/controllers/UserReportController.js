@@ -13,13 +13,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.exportUserReport = void 0;
-const Task_1 = __importDefault(require("../models/Task"));
-const exceljs_1 = __importDefault(require("exceljs"));
-const moment_1 = __importDefault(require("moment"));
-const pdfmake_1 = __importDefault(require("pdfmake/build/pdfmake"));
 const User_1 = __importDefault(require("../models/User"));
-const vfs_fonts_1 = __importDefault(require("pdfmake/build/vfs_fonts"));
-pdfmake_1.default.vfs = vfs_fonts_1.default.vfs;
+const Task_1 = __importDefault(require("../models/Task"));
+const moment_1 = __importDefault(require("moment"));
+const pdfReportGenerator_1 = require("../services/pdfReportGenerator");
+const excelReportGenerator_1 = require("../services/excelReportGenerator");
 const exportUserReport = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     try {
@@ -31,20 +29,28 @@ const exportUserReport = (req, res) => __awaiter(void 0, void 0, void 0, functio
         }
         // Get users and tasks for the organization
         const users = yield User_1.default.find({ organization: userOrganization })
-            .select("name email _id createdAt role status")
+            .select("name email _id createdAt")
             .lean();
         const tasks = yield Task_1.default.find({ organization: userOrganization }).populate("assignedTo", "name email _id");
         // Create user task map
         const userTaskMap = {};
-        // Initialize user data
         users.forEach((user) => {
             const memberSinceFormatted = (0, moment_1.default)(user.createdAt).format("MM/DD/YYYY");
-            const duration = (0, moment_1.default)().diff((0, moment_1.default)(user.createdAt), "years") +
-                " years " +
-                ((0, moment_1.default)().diff((0, moment_1.default)(user.createdAt), "months") % 12) +
-                " months " +
-                ((0, moment_1.default)().diff((0, moment_1.default)(user.createdAt), "days") % 30) +
-                " days";
+            // Calculate tenure
+            const years = (0, moment_1.default)().diff((0, moment_1.default)(user.createdAt), "years");
+            const months = (0, moment_1.default)().diff((0, moment_1.default)(user.createdAt), "months") % 12;
+            const days = (0, moment_1.default)().diff((0, moment_1.default)(user.createdAt), "days") % 30;
+            const tenureParts = [];
+            if (years > 0) {
+                tenureParts.push(`${years} year${years > 1 ? "s" : ""}`);
+            }
+            if (months > 0) {
+                tenureParts.push(`${months} month${months > 1 ? "s" : ""}`);
+            }
+            if (days > 0) {
+                tenureParts.push(`${days} day${days > 1 ? "s" : ""}`);
+            }
+            const tenure = tenureParts.length > 0 ? tenureParts.join(" ") : "0 days";
             userTaskMap[user._id.toString()] = {
                 name: user.name,
                 email: user.email,
@@ -53,7 +59,7 @@ const exportUserReport = (req, res) => __awaiter(void 0, void 0, void 0, functio
                 inProgressTasks: 0,
                 completedTasks: 0,
                 memberSince: memberSinceFormatted,
-                duration: duration,
+                tenure: tenure,
                 taskCompletionRate: "0%",
                 taskStatusByUser: {
                     pending: 0,
@@ -66,9 +72,7 @@ const exportUserReport = (req, res) => __awaiter(void 0, void 0, void 0, functio
         tasks.forEach((task) => {
             const assignedUsers = Array.isArray(task.assignedTo)
                 ? task.assignedTo
-                : task.assignedTo
-                    ? [task.assignedTo]
-                    : [];
+                : task.assignedTo ? [task.assignedTo] : [];
             assignedUsers.forEach((assignedUser) => {
                 const userId = assignedUser._id.toString();
                 if (userTaskMap[userId]) {
@@ -99,93 +103,16 @@ const exportUserReport = (req, res) => __awaiter(void 0, void 0, void 0, functio
         });
         const reportData = Object.values(userTaskMap);
         if (exportType === "pdf") {
-            const docDefinition = {
-                pageOrientation: "landscape", // Set the PDF to landscape mode
-                content: [
-                    { text: "User Report", style: "header" },
-                    {
-                        table: {
-                            headerRows: 1,
-                            widths: [
-                                "*",
-                                "*",
-                                "auto",
-                                "auto",
-                                "auto",
-                                "auto",
-                                "auto",
-                                150,
-                                "auto",
-                            ],
-                            body: [
-                                [
-                                    "Name",
-                                    "Email",
-                                    "Total Tasks",
-                                    "Pending Tasks",
-                                    "In Progress Tasks",
-                                    "Completed Tasks",
-                                    "Member Since",
-                                    "Duration",
-                                    "Completion Rate",
-                                ],
-                                ...reportData.map((user) => [
-                                    user.name,
-                                    user.email,
-                                    user.taskCount,
-                                    user.pendingTasks,
-                                    user.inProgressTasks,
-                                    user.completedTasks,
-                                    user.memberSince,
-                                    { text: user.duration, noWrap: false },
-                                    user.taskCompletionRate,
-                                ])
-                            ]
-                        }
-                    }
-                ],
-                styles: {
-                    header: {
-                        fontSize: 18,
-                        bold: true,
-                        margin: [0, 0, 0, 10],
-                    }
-                },
-                defaultStyle: {
-                    font: "Roboto"
-                }
-            };
-            const pdfDoc = pdfmake_1.default.createPdf(docDefinition);
-            pdfDoc.getBuffer((buffer) => {
-                const pdfBuffer = Buffer.from(buffer);
-                res.setHeader("Content-Type", "application/pdf");
-                res.setHeader("Content-Disposition", "attachment; filename=user_report.pdf");
-                res.send(pdfBuffer);
-            });
+            const pdfBuffer = yield (0, pdfReportGenerator_1.generateUserPdf)(reportData);
+            res.setHeader("Content-Type", "application/pdf");
+            res.setHeader("Content-Disposition", "attachment; filename=user_report.pdf");
+            res.send(pdfBuffer);
         }
         else {
-            // Excel Generation
-            // const workbook = new excelJS.Workbook();
-            // const worksheet = workbook.addWorksheet("User Tasks Report");
-            const workbook = new exceljs_1.default.Workbook();
-            const worksheet = workbook.addWorksheet("User Tasks Report");
-            worksheet.columns = [
-                { header: "User Name", key: "name", width: 30 },
-                { header: "Email", key: "email", width: 40 },
-                { header: "Total Tasks", key: "taskCount", width: 20 },
-                { header: "Pending", key: "pendingTasks", width: 20 },
-                { header: "In Progress", key: "inProgressTasks", width: 20 },
-                { header: "Completed", key: "completedTasks", width: 20 },
-                { header: "Member Since", key: "memberSince", width: 15 },
-                { header: "Duration", key: "duration", width: 30 },
-                { header: "Completion Rate", key: "taskCompletionRate", width: 25 },
-            ];
-            reportData.forEach((userData) => {
-                worksheet.addRow(Object.assign(Object.assign({}, userData), { taskStatusByUser_pending: userData.taskStatusByUser.pending, taskStatusByUser_inProgress: userData.taskStatusByUser.inProgress, taskStatusByUser_completed: userData.taskStatusByUser.completed }));
-            });
+            const excelBuffer = yield (0, excelReportGenerator_1.generateUserExcel)(reportData);
             res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
             res.setHeader("Content-Disposition", "attachment; filename=user_report.xlsx");
-            yield workbook.xlsx.write(res);
+            res.send(excelBuffer);
         }
     }
     catch (error) {

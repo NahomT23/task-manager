@@ -2,15 +2,19 @@
 import { useState } from "react";
 import { HiMiniPlus, HiOutlineTrash } from "react-icons/hi2";
 import { LuPaperclip } from "react-icons/lu";
+import { useThemeStore } from "../store/themeStore";
 
 interface AddAttachmentsInputProps {
   attachments: string[];
   setAttachments: (attachments: string[]) => void;
 }
 
+
+
 const AddAttachmentsInput = ({ attachments, setAttachments }: AddAttachmentsInputProps) => {
   const [newAttachment, setNewAttachment] = useState("");
-
+  const { isDarkMode } = useThemeStore();
+  
   const handleAddAttachment = () => {
     if (newAttachment.trim()) {
       setAttachments([...attachments, newAttachment.trim()]);
@@ -57,7 +61,7 @@ const AddAttachmentsInput = ({ attachments, setAttachments }: AddAttachmentsInpu
         <button
           type="button"
           onClick={handleAddAttachment}
-          className="px-4 py-2 bg-blue-100 text-blue-600 rounded-md hover:bg-blue-200 flex items-center gap-2"
+          className={`px-4 py-2 bg-blue-100 ${isDarkMode ? 'text-blue-700' : 'text-black'} rounded-md hover:bg-blue-200 flex items-center gap-2`}
         >
           <HiMiniPlus className="text-lg" /> Add
         </button>

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import DashboardLayout from "../../layouts/DashboardLayout";
 import axiosInstance from "../../api/axiosInstance";
 import { LuFileSpreadsheet } from "react-icons/lu";
-import { FiCopy } from "react-icons/fi";
+import { FiCopy, FiCheck } from "react-icons/fi";
 import { UserCard } from "../../components/Cards/UserCard";
 import { toast } from "react-toastify";
 import UserCardSkeleton from "../../components/skeleton/UserCardSkeleton";
@@ -16,6 +16,9 @@ interface User {
   pendingTasks: number;
   inProgressTasks: number;
   completedTasks: number;
+  joinedAt: string;
+  assignedTasks: number;
+  priority?: string;
 }
 
 const ManageUsers = () => {
@@ -24,6 +27,7 @@ const ManageUsers = () => {
   const [loading, setLoading] = useState(true);
   const [invitationToken, setInvitationToken] = useState<string | null>(null);
   const [isDownloadPopupOpen, setIsDownloadPopupOpen] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
   const { isDarkMode } = useThemeStore();
 
   const getAllUsers = async () => {
@@ -52,7 +56,6 @@ const ManageUsers = () => {
 
   const handleDownloadReport = async (format: "excel" | "pdf") => {
     setIsDownloadPopupOpen(false);
-    
     try {
       const response = await axiosInstance.get(`/reports/export/users?type=${format}`, {
         responseType: "blob",
@@ -67,6 +70,8 @@ const ManageUsers = () => {
       link.click();
       link.parentNode?.removeChild(link);
       window.URL.revokeObjectURL(url);
+
+      toast.success(`${format.toUpperCase()} report downloaded successfully!`);
     } catch (error) {
       console.error("Download error:", error);
       toast.error("Failed to download report");
@@ -76,7 +81,9 @@ const ManageUsers = () => {
   const copyToClipboard = () => {
     if (invitationToken) {
       navigator.clipboard.writeText(invitationToken);
+      setIsCopied(true);
       toast.success("Copied to clipboard!");
+      setTimeout(() => setIsCopied(false), 2000);
     }
   };
 
@@ -90,117 +97,129 @@ const ManageUsers = () => {
       user.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+
   return (
     <DashboardLayout activeMenu="Team Members">
-      <div className="mt-5 mb-10 relative">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-6">
-          <div className="w-full">
-            <h2 className="text-xl md:text-2xl font-medium mb-4">Team Members</h2>
-            <div className="max-w-96 mb-4">
-              <input
-                type="text"
-                placeholder=" Search by name or email..."
-                className="w-full py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-          </div>
-
-          {/* Action Buttons Container */}
-          <div className="flex gap-2 flex-wrap lg:flex-nowrap justify-end mb-4 lg:mb-0">
-            {/* Invitation Button */}
-            <button
-              onClick={generateInvitationCode}
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-sm whitespace-nowrap"
-            >
-              Generate Invitation Code
-            </button>
-
-            {/* Download Report Section */}
+      <div className="my-5">
+        <div className="flex flex-col gap-4">
+          {/* Header Section */}
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl md:text-xl font-medium">Team Members</h2>
             <div className="relative">
               <button
-                onClick={() => setIsDownloadPopupOpen(!isDownloadPopupOpen)}
-                className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg text-sm whitespace-nowrap"
+                onClick={() => setIsDownloadPopupOpen((prev) => !prev)}
+                className={`px-2 py-1 text-xs border rounded-md ${
+                  isDarkMode
+                    ? "hover:bg-gray-700 text-gray-200"
+                    : "hover:bg-gray-100 text-gray-800"
+                }`}
               >
-                <LuFileSpreadsheet className="text-base" />
                 Download Report
               </button>
-
               {isDownloadPopupOpen && (
-                <div 
-                  className={`absolute right-0 mt-2 w-40 rounded-lg shadow-lg z-20 ${
-                    isDarkMode 
-                      ? 'bg-gray-800 border border-gray-700' 
-                      : 'bg-white border border-gray-200'
+                <div
+                  className={`absolute right-0 mt-2 w-40 rounded-md shadow-lg z-10 ${
+                    isDarkMode
+                      ? "bg-gray-800 border border-gray-700"
+                      : "bg-white border border-gray-200"
                   }`}
                 >
-                  <button
-                    onClick={() => handleDownloadReport("excel")}
-                    className={`w-full flex items-center gap-2 px-4 py-2 text-sm ${
-                      isDarkMode 
-                        ? 'text-white hover:bg-gray-700' 
-                        : 'text-gray-800 hover:bg-gray-100'
-                    }`}
-                  >
-                    <LuFileSpreadsheet className="text-base" /> Excel
-                  </button>
-                  <button
-                    onClick={() => handleDownloadReport("pdf")}
-                    className={`w-full flex items-center gap-2 px-4 py-2 text-sm ${
-                      isDarkMode 
-                        ? 'text-white hover:bg-gray-700' 
-                        : 'text-gray-800 hover:bg-gray-100'
-                    }`}
-                  >
-                    <LuFileSpreadsheet className="text-base" /> PDF
-                  </button>
+                  <div className="p-3">
+                    <ul className="space-y-1">
+                      <li>
+                        <button
+                          onClick={() => handleDownloadReport("excel")}
+                          className={`w-full flex items-center gap-2 px-2 py-1 rounded ${
+                            isDarkMode
+                              ? "text-gray-200 hover:bg-gray-700"
+                              : "text-gray-800 hover:bg-gray-200"
+                          }`}
+                        >
+                          <LuFileSpreadsheet className="text-lg" />
+                          Excel
+                        </button>
+                      </li>
+                      <li>
+                        <button
+                          onClick={() => handleDownloadReport("pdf")}
+                          className={`w-full flex items-center gap-2 px-2 py-1 rounded ${
+                            isDarkMode
+                              ? "text-gray-200 hover:bg-gray-700"
+                              : "text-gray-800 hover:bg-gray-200"
+                          }`}
+                        >
+                          <LuFileSpreadsheet className="text-lg" />
+                          PDF
+                        </button>
+                      </li>
+                    </ul>
+                  </div>
                 </div>
               )}
             </div>
           </div>
-
-          {/* Invitation Token Display */}
+  
+          {/* Search and Invitation Code Generator Section */}
+          <div className="flex flex-col md:flex-row md:items-center gap-3 md:justify-between items-start">
+            <input
+              type="text"
+              placeholder=" Search.."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="px-2 py-1 border rounded-md max-w-xs"
+            />
+            <button
+              onClick={generateInvitationCode}
+              className="px-4 py-2 border rounded-md bg-blue-600 hover:bg-blue-700 text-white text-xs whitespace-nowrap"
+            >
+              Generate Invitation Code
+            </button>
+          </div>
+  
           {invitationToken && (
-            <div 
-              className={`flex items-center gap-2 p-3 rounded-lg w-full lg:w-auto ${
-                isDarkMode 
-                  ? 'bg-blue-900/20 border border-blue-800' 
-                  : 'bg-blue-100 border border-blue-200'
+            <div
+              className={`flex items-center gap-2 p-2 rounded-md w-fit ${
+                isDarkMode
+                  ? "bg-blue-900/20 border border-blue-800"
+                  : "bg-blue-100 border border-blue-200"
               }`}
             >
-              <span className={`font-mono text-sm break-all ${
-                isDarkMode ? 'text-blue-200' : 'text-blue-800'
-              }`}>
+              <span className="font-mono text-xs break-all">
                 {invitationToken}
               </span>
-              <FiCopy
-                className={`cursor-pointer text-lg ${
-                  isDarkMode ? 'text-blue-300' : 'text-blue-600'
-                } hover:opacity-80 transition-opacity`}
-                onClick={copyToClipboard}
-              />
+              {isCopied ? (
+                <FiCheck
+                  className={`cursor-pointer ${isDarkMode ? "text-blue-300" : "text-blue-600"}`}
+                  onClick={copyToClipboard}
+                />
+              ) : (
+                <FiCopy
+                  className={`cursor-pointer ${isDarkMode ? "text-blue-300" : "text-blue-600"}`}
+                  onClick={copyToClipboard}
+                />
+              )}
             </div>
           )}
-
+  
+          {/* User Cards Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {loading ? (
+              <UserCardSkeleton count={9} />
+            ) : filteredUsers.length > 0 ? (
+              filteredUsers.map((user) => (
+                <UserCard key={user._id} userInfo={user} />
+              ))
+            ) : (
+              <div className="col-span-full text-center py-8 text-gray-500">
+                No users found
+              </div>
+            )}
+          </div>
         </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {loading ? (
-            <UserCardSkeleton count={Math.max(9, allUsers?.length || 0)} />
-          ) : (
-            filteredUsers.map((user) => (
-              <UserCard key={user._id} userInfo={user} />
-            ))
-          )}
-        </div>
-
-        {filteredUsers.length === 0 && !loading && (
-          <div className="text-center py-8 text-gray-500">No users found</div>
-        )}
       </div>
     </DashboardLayout>
   );
+  
 };
 
 export default ManageUsers;

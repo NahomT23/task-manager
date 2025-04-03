@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.joinOrganization = exports.createOrganization = exports.generateInvitationCode = void 0;
+exports.updateOrganizationName = exports.getOrganizationById = exports.joinOrganization = exports.createOrganization = exports.generateInvitationCode = void 0;
 const crypto_1 = __importDefault(require("crypto"));
 const Organization_1 = __importDefault(require("../models/Organization"));
 const User_1 = __importDefault(require("../models/User"));
@@ -27,16 +27,22 @@ const generateInvitationCode = (req, res) => __awaiter(void 0, void 0, void 0, f
             res.status(400).json({ message: 'User is not associated with any organization' });
             return;
         }
-        // Generate a new token that expires in 1 day
-        const token = crypto_1.default.randomBytes(20).toString('hex');
+        const generateCode = () => {
+            const hexChars = '0123456789abcdef';
+            let code = '';
+            for (let i = 0; i < 10; i++) {
+                code += hexChars.charAt(crypto_1.default.randomInt(hexChars.length));
+            }
+            return code;
+        };
+        const code = generateCode();
         const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
-        // Push the new invitation code into the organization's invitations array
-        const organization = yield Organization_1.default.findByIdAndUpdate(organizationId, { $push: { invitations: { token, expiresAt } } }, { new: true });
+        const organization = yield Organization_1.default.findByIdAndUpdate(organizationId, { $push: { invitations: { token: code, expiresAt } } }, { new: true });
         if (!organization) {
             res.status(404).json({ message: 'Organization not found' });
             return;
         }
-        res.status(200).json({ invitationToken: token, expiresAt });
+        res.status(200).json({ invitationToken: code, expiresAt });
     }
     catch (error) {
         console.error(error);
@@ -46,7 +52,6 @@ const generateInvitationCode = (req, res) => __awaiter(void 0, void 0, void 0, f
 exports.generateInvitationCode = generateInvitationCode;
 const createOrganization = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        // Ensure user is idle and authenticated
         if (!req.user || req.user.role !== 'idle') {
             res.status(403).json({ message: 'Unauthorized to create organization' });
             return;
@@ -95,7 +100,6 @@ const joinOrganization = (req, res) => __awaiter(void 0, void 0, void 0, functio
             res.status(400).json({ message: 'Invitation token required' });
             return;
         }
-        // Find organization with the valid token
         const organization = yield Organization_1.default.findOne({
             "invitations.token": invitationToken,
         });
@@ -131,3 +135,45 @@ const joinOrganization = (req, res) => __awaiter(void 0, void 0, void 0, functio
     }
 });
 exports.joinOrganization = joinOrganization;
+const getOrganizationById = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { id } = req.params;
+        const organization = yield Organization_1.default.findById(id);
+        if (!organization) {
+            res.status(404).json({ message: 'Organization not found' });
+            return;
+        }
+        res.status(200).json(organization);
+    }
+    catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+exports.getOrganizationById = getOrganizationById;
+const updateOrganizationName = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    try {
+        const { name } = req.body;
+        const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a._id;
+        if (!name || typeof name !== 'string') {
+            res.status(400).json({ message: 'Valid organization name required' });
+            return;
+        }
+        const user = yield User_1.default.findById(userId).populate('organization');
+        if (!(user === null || user === void 0 ? void 0 : user.organization)) {
+            res.status(400).json({ message: 'User not associated with any organization' });
+            return;
+        }
+        const organization = yield Organization_1.default.findByIdAndUpdate(user.organization._id, { name: name.trim() }, { new: true });
+        res.status(200).json({
+            message: 'Organization name updated successfully',
+            organization
+        });
+    }
+    catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+exports.updateOrganizationName = updateOrganizationName;

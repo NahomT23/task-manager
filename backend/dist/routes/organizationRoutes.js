@@ -10,4 +10,8 @@ orgRoutes.post('/create', authMiddleware_1.protect, authMiddleware_1.idleOnly, o
 orgRoutes.post('/generate-invitation', authMiddleware_1.protect, authMiddleware_1.adminOnly, organizationController_1.generateInvitationCode);
 // JOIN AN ORGANIZATION VIA INVITATION CODE
 orgRoutes.post('/join', authMiddleware_1.protect, authMiddleware_1.idleOnly, organizationController_1.joinOrganization);
+// GET ORG BY ID
+orgRoutes.get('/:id', authMiddleware_1.protect, organizationController_1.getOrganizationById);
+// UPDATING ORG NAME
+orgRoutes.put('/update-name', authMiddleware_1.protect, authMiddleware_1.adminOnly, organizationController_1.updateOrganizationName);
 exports.default = orgRoutes;

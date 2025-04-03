@@ -11,6 +11,8 @@ interface TodoListInputProps {
 }
 
 const TodoListInput = ({ control, name, setValue, register, errors }: TodoListInputProps) => {
+
+
   const { fields, append, remove } = useFieldArray({
     control,
     name: name,
@@ -28,6 +30,7 @@ const TodoListInput = ({ control, name, setValue, register, errors }: TodoListIn
     const progress = totalItems > 0 ? Math.round((completedCount / totalItems) * 100) : 0;
     setValue("progress", progress);
   }, [todoItems, setValue]);
+
 
   return (
     <div className="space-y-2">
@@ -59,13 +62,14 @@ const TodoListInput = ({ control, name, setValue, register, errors }: TodoListIn
           </button>
         </div>
       ))}
-      <button
-        type="button"
-        onClick={() => append({ text: "", completed: false })}
-        className="flex items-center gap-1 text-blue-600 hover:text-blue-700 text-sm"
-      >
-        <HiMiniPlus className="w-4 h-4" /> Add Item
-      </button>
+<button
+  type="button"
+  onClick={() => append({ text: "", completed: false })}
+  className={`flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-500 text-sm transition-colors duration-200`}
+>
+  <HiMiniPlus className="w-4 h-4" /> Add Todo
+</button>
+
     </div>
   );
 };

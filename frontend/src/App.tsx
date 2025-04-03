@@ -1,7 +1,6 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route  } from 'react-router-dom';
 import SignUp from './pages/Auth/SignUp';
 import SignIn from './pages/Auth/SignIn';
-
 import Dashboard from './pages/Admin/Dashboard';
 import ManageTasks from './pages/Admin/ManageTasks';
 import CreateTask from './pages/Admin/CreateTask';
@@ -14,23 +13,23 @@ import MyProfile from './pages/MyProfile';
 import UserDetails from './pages/Admin/UserDetails';
 import { ToastContainer } from 'react-toastify';
 import PrivateRoutes from './routes/PrivateRoute';
+import LandingPage from './components/LandningPage';
 
 function App() {
   return (
     <div>
       <Router>
         <Routes>
-          {/* Redirect from the root path to the login page */}
-          <Route path="/" element={<Navigate to="/signin" />} />
-
+          {/* Landing Page as root route */}
+          <Route path="/" element={<LandingPage />} />
+          
           <Route path="signin" element={<SignIn />} />
           <Route path="signup" element={<SignUp />} />
           <Route path="setup" element={<Setup />} />
 
           <Route element={<PrivateRoutes allowedRoles={["admin", "member"]} />}>
-          <Route path="profile" element={<MyProfile />} />
+            <Route path="profile" element={<MyProfile />} />
           </Route>
-          
           
           {/* ADMIN ROUTES */}
           <Route element={<PrivateRoutes allowedRoles={["admin"]} />}>
@@ -47,7 +46,6 @@ function App() {
             <Route path="user/tasks" element={<MyTasks />} />
             <Route path="user/task-details/:id" element={<ViewTaskDetails />} />
           </Route>
-
 
         </Routes>
         <ToastContainer />
