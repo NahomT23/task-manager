@@ -30,7 +30,7 @@ const MyProfile: React.FC = () => {
   const [preview, setPreview] = useState<string>(user?.profileImageUrl || '');
   const [message, setMessage] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false); 
-  const [fileInputKey, setFileInputKey] = useState<number>(Math.random());
+  const [fileInputKey] = useState<number>(Math.random());
 
   useEffect(() => {
     if (user) {

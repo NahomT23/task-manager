@@ -117,6 +117,8 @@ const Dashboard = () => {
     getDashboardData();
   }, []);
 
+  console.log(error)
+
 
 
   return (
