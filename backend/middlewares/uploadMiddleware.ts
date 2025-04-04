@@ -27,11 +27,18 @@ const fileFilter = (
   if (allowedTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    // Casting the error to 'any' to satisfy the type requirement.
+
     cb(new Error('Only .jpeg, .jpg and .png formats allowed') as any, false);
   }
 };
 
-const upload = multer({ storage, fileFilter });
+const upload = multer({ 
+  storage, 
+  fileFilter,
+  limits: { 
+    fileSize: 5 * 1024 * 1024,
+    files: 1 
+  } 
+});
 
 export default upload;

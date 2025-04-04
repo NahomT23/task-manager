@@ -18,9 +18,15 @@ const fileFilter = (req, file, cb) => {
         cb(null, true);
     }
     else {
-        // Casting the error to 'any' to satisfy the type requirement.
         cb(new Error('Only .jpeg, .jpg and .png formats allowed'), false);
     }
 };
-const upload = (0, multer_1.default)({ storage, fileFilter });
+const upload = (0, multer_1.default)({
+    storage,
+    fileFilter,
+    limits: {
+        fileSize: 5 * 1024 * 1024,
+        files: 1
+    }
+});
 exports.default = upload;

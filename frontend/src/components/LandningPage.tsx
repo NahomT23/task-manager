@@ -113,7 +113,7 @@ export default function LandingPage() {
               onClick={() => navigate('/signin')}
               className="bg-indigo-600 text-white px-8 py-3 rounded-lg text-lg hover:bg-indigo-700 transition"
             >
-              Start Free Trial
+              Start For Free
             </button>
           </motion.div>
         </div>

@@ -4,22 +4,20 @@ import cookieParser from 'cookie-parser';
 import express from 'express'
 import { configDotenv } from 'dotenv'; 
 import connectToDB from './config/db';
-import helmet from 'helmet';
-import { RequestHandler } from 'express';
+import helmet from 'helmet';;
 import authRoutes from './routes/authRoutes';
 import orgRoutes from './routes/organizationRoutes';
 import userRoutes from './routes/userRoutes';
 import taskRoutes from './routes/taskRoutes';
 import reportRoutes from './routes/reportsRoutes';
+import { apiLimiter, uploadLimiter } from './middlewares/rateLimitMiddleware';
 configDotenv();
 
 const PORT = process.env.PORT  || 3000
 const app = express()
 
-
-
 app.use(cors({
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    origin: process.env.CLIENT_URL,
     credentials: true, 
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
@@ -27,36 +25,27 @@ app.use(cors({
   
 
   app.options('*', cors({
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    origin: process.env.CLIENT_URL,
     credentials: true
   }));
+
+  console.log(process.env.CLIENT_URL)
 
 
 app.use(mongoSanitize())
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser())
-
-// Before helmet, this is for the profile images
-app.use('/uploads', express.static('uploads'));
-
-// app.use(helmet() as RequestHandler);
+app.use('/uploads', uploadLimiter, express.static('uploads'));
+app.use(helmet())
 
 
-// ROUTES
 
 app.use('/api/auth', authRoutes)
-app.use('/api/org', orgRoutes)
-app.use('/api/users', userRoutes)
-app.use('/api/tasks', taskRoutes)
-app.use('/api/reports', reportRoutes)
-
-
-app.get('/', (req, res) => {
-    res.send('Hello wworld')
-})
-
-
+app.use('/api/org', apiLimiter, orgRoutes);
+app.use('/api/users', apiLimiter, userRoutes);
+app.use('/api/tasks', apiLimiter, taskRoutes);
+app.use('/api/reports', apiLimiter, reportRoutes);
 
 
 app.listen(PORT, () => {
