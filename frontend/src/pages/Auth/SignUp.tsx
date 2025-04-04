@@ -7,13 +7,16 @@ import { Link, useNavigate } from 'react-router-dom';
 import { SignUpSchema } from '../../formSchemas/authFormSchema';
 import { useSignUp } from '../../hooks/useSignUp';
 import { z } from 'zod';
+import { useThemeStore } from '../../store/themeStore';
 
 type FormData = z.infer<typeof SignUpSchema>;
 
 const Signup: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null); // New state
+  const [selectedFile, setSelectedFile] = useState<File | null>(null); 
   const navigate = useNavigate();
+  const { isDarkMode } = useThemeStore();
+    
 
   const { register, handleSubmit, formState: { errors, isValid }, setValue } = useForm<FormData>({
     resolver: zodResolver(SignUpSchema),
@@ -60,7 +63,7 @@ const Signup: React.FC = () => {
               type="text"
               {...register('name')}
               placeholder="Enter your name"
-              className={`block w-full px-3 py-2 border ${errors.name ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm`}
+              className={`block w-full px-3 py-2 border  ${isDarkMode ? 'text-black' : ''} ${errors.name ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm`}
             />
             {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>}
           </div>
@@ -72,7 +75,7 @@ const Signup: React.FC = () => {
               type="email"
               {...register('email')}
               placeholder="Enter your email"
-              className={`block w-full px-3 py-2 border ${errors.email ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm`}
+              className={`block w-full px-3 py-2 border ${isDarkMode ? 'text-black' : ''} ${errors.email ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm`}
             />
             {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>}
           </div>
@@ -85,7 +88,7 @@ const Signup: React.FC = () => {
                 type={showPassword ? 'text' : 'password'}
                 {...register('password')}
                 placeholder="Enter your password"
-                className={`block w-full px-3 py-2 pr-10 border ${
+                className={`block w-full px-3 py-2 pr-10 border ${isDarkMode ? 'text-black' : ''} ${
                   errors.password ? 'border-red-500' : 'border-gray-300'
                 } rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm`}
               />
@@ -113,7 +116,7 @@ const Signup: React.FC = () => {
               type="text"
               {...register('invitationCode')}
               placeholder="Enter invitation code if available"
-              className={`block w-full px-3 py-2 border ${errors.invitationCode ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm`}
+              className={`block w-full px-3 py-2 border${isDarkMode ? 'text-black' : ''} ${errors.invitationCode ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm`}
             />
             {errors.invitationCode && <p className="text-red-500 text-xs mt-1">{errors.invitationCode.message}</p>}
           </div>

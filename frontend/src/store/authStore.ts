@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { useOrganizationStore } from './organizationStore';
 
 export interface User {
   id: string;
@@ -40,7 +41,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   logout: () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-
+    useOrganizationStore.getState().resetOrg();
     set({ token: null, user: null });
 
   }

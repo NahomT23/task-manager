@@ -117,21 +117,7 @@ const Dashboard = () => {
     getDashboardData();
   }, []);
 
-  if (error) {
-    return (
-      <DashboardLayout activeMenu="Dashboard">
-        <div className="text-center py-10">
-          <div className="text-red-500 mb-4">{error}</div>
-          <button
-            onClick={getDashboardData}
-            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-          >
-            Retry
-          </button>
-        </div>
-      </DashboardLayout>
-    );
-  }
+
 
   return (
     <DashboardLayout activeMenu="Dashboard">

@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { AiOutlineEye, AiOutlineEyeInvisible } from 'react-icons/ai';
 import { Link, useNavigate } from 'react-router-dom';
 import { useSignIn } from '../../hooks/useSignIn';
+import { useThemeStore } from '../../store/themeStore';
 
 const SignInSchema = z.object({
   email: z.string().email({ message: 'Invalid email address' }),
@@ -15,6 +16,8 @@ type FormData = z.infer<typeof SignInSchema>;
 const Signin: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
+  const { isDarkMode } = useThemeStore();
+  
 
   const { register, handleSubmit, formState: { errors, isValid } } = useForm<FormData>({
     resolver: zodResolver(SignInSchema),
@@ -53,7 +56,7 @@ const Signin: React.FC = () => {
               type="email"
               {...register('email')}
               placeholder="Enter your email"
-              className={`block w-full px-3 py-2 border ${errors.email ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm`}
+              className={`block w-full px-3 py-2 border ${isDarkMode ? 'text-black' : ''} ${errors.email ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm`}
             />
             {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>}
           </div>
@@ -66,8 +69,8 @@ const Signin: React.FC = () => {
       type={showPassword ? 'text' : 'password'}
       {...register('password')}
       placeholder="Enter your password"
-      className={`block w-full px-3 py-2 pr-10 border ${
-        errors.password ? 'border-red-500' : 'border-gray-300'
+      className={`block w-full px-3 py-2 pr-10 border ${isDarkMode ? 'text-black' : ''} ${
+        errors.password ? 'border-red-500' : 'border-gray-300' 
       } rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm`}
     />
     <button

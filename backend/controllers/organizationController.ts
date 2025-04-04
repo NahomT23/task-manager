@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import crypto from 'crypto';
 import Organization from '../models/Organization';
 import User from '../models/User';
-
+import jwt from 'jsonwebtoken';
 
 export const generateInvitationCode = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -64,7 +64,7 @@ export const createOrganization = async (req: Request, res: Response): Promise<v
       return;
     }
 
-    // Check if user is already an admin elsewhere
+
     const existingOrg = await Organization.findOne({ admin: req.user.id });
     if (existingOrg) {
       res.status(400).json({ message: 'User is already an admin' });
@@ -81,23 +81,42 @@ export const createOrganization = async (req: Request, res: Response): Promise<v
 
     await organization.save();
 
-    // Update user role and organization
+    // Update user role and organization (remove populate)
     const user = await User.findByIdAndUpdate(
       req.user.id,
       { role: 'admin', organization: organization._id },
       { new: true }
     );
 
+
+
+    if (!user) {
+      res.status(500).json({ message: 'Failed to update user' });
+      return;
+    }
+
+
+    const token = jwt.sign(
+      { 
+        id: user.id, 
+        role: user.role, 
+        organization: user.organization 
+      },
+      process.env.JWT_SECRET!,
+      { expiresIn: '1d' }
+    );
+
     res.status(201).json({
-      message: 'Organization created',
+      message: `Organization created`,
       organization,
       user,
+      token
     });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error' });
   }
-};
+}
 
 export const joinOrganization = async (req: Request, res: Response): Promise<void> => {
   try {

@@ -16,6 +16,7 @@ exports.updateOrganizationName = exports.getOrganizationById = exports.joinOrgan
 const crypto_1 = __importDefault(require("crypto"));
 const Organization_1 = __importDefault(require("../models/Organization"));
 const User_1 = __importDefault(require("../models/User"));
+const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const generateInvitationCode = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         if (!req.user || req.user.role !== 'admin') {
@@ -61,7 +62,6 @@ const createOrganization = (req, res) => __awaiter(void 0, void 0, void 0, funct
             res.status(400).json({ message: 'Organization name required' });
             return;
         }
-        // Check if user is already an admin elsewhere
         const existingOrg = yield Organization_1.default.findOne({ admin: req.user.id });
         if (existingOrg) {
             res.status(400).json({ message: 'User is already an admin' });
@@ -75,12 +75,22 @@ const createOrganization = (req, res) => __awaiter(void 0, void 0, void 0, funct
             invitations: [],
         });
         yield organization.save();
-        // Update user role and organization
+        // Update user role and organization (remove populate)
         const user = yield User_1.default.findByIdAndUpdate(req.user.id, { role: 'admin', organization: organization._id }, { new: true });
+        if (!user) {
+            res.status(500).json({ message: 'Failed to update user' });
+            return;
+        }
+        const token = jsonwebtoken_1.default.sign({
+            id: user.id,
+            role: user.role,
+            organization: user.organization
+        }, process.env.JWT_SECRET, { expiresIn: '1d' });
         res.status(201).json({
-            message: 'Organization created',
+            message: `Organization created`,
             organization,
             user,
+            token
         });
     }
     catch (error) {

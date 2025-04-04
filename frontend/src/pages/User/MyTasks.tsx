@@ -2,11 +2,10 @@ import { useEffect, useState, useMemo } from "react";
 import DashboardLayout from "../../layouts/DashboardLayout";
 import { useNavigate } from "react-router-dom";
 import axiosInstance from "../../api/axiosInstance";
-import { LuFileSpreadsheet } from "react-icons/lu";
 import TaskStatusTabs from "../../components/TaskStatusTabs";
 import { TaskCard } from "../../components/Cards/TaskCard";
-import { toast } from "react-toastify";
 import TaskCardSkeleton from "../../components/skeleton/TaskCardSkeleton";
+import { useThemeStore } from "../../store/themeStore";
 
 interface Task {
   _id: string;
@@ -49,6 +48,7 @@ const MyTasks = () => {
   const [isSortPopupOpen, setIsSortPopupOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const { isDarkMode } = useThemeStore();
 
   const fetchTasks = async () => {
     setLoading(true);
@@ -72,45 +72,10 @@ const MyTasks = () => {
   }, [filterStatus]);
 
   const handleClick = (task: Task) => {
-    // Change from admin route to user route
     navigate(`/user/task-details/${task._id}`);
   };
 
-  const handleDownloadReport = async (format: 'excel' | 'pdf') => {
-    try {
-      const response = await axiosInstance.get(`/reports/export/tasks?type=${format}`, {
-        responseType: "blob"
-      });
-      const contentType = response.headers['content-type'];
-      
-      if (contentType.includes('application/json')) {
-        const reader = new FileReader();
-        reader.onload = () => {
-          try {
-            const errorData = JSON.parse(reader.result as string);
-            toast.error(errorData.message || "Error downloading report");
-          } catch (e) {
-            toast.error("Failed to download report");
-          }
-        };
-        reader.readAsText(response.data);
-        return;
-      }
 
-      const extension = format === 'excel' ? 'xlsx' : 'pdf';
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `task_details.${extension}`);
-      document.body.appendChild(link);
-      link.click();
-      link.parentNode?.removeChild(link);
-      window.URL.revokeObjectURL(url);
-    } catch (error) {
-      console.log("error downloading task report: ", error);
-      toast.error("Error downloading task reports, please try again");
-    }
-  };
 
   const filteredAndSortedTasks = useMemo(() => {
     let filtered = tasks.filter((task) => {
@@ -162,29 +127,75 @@ const MyTasks = () => {
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-xl md:text-xl font-medium">My Tasks</h2>
               <div className="flex lg:hidden gap-2">
-                <button
-                  onClick={() => handleDownloadReport('excel')}
-                  className="flex download-btn"
-                >
-                  <LuFileSpreadsheet className="text-lg" />
-                  <span>Excel</span>
-                </button>
-                <button
-                  onClick={() => handleDownloadReport('pdf')}
-                  className="flex download-btn bg-red-600 hover:bg-red-700"
-                >
-                  <LuFileSpreadsheet className="text-lg" />
-                  <span>PDF</span>
-                </button>
+                
               </div>
             </div>
+          
+          <div className="flex gap-2">
+
+
             <input
               type="text"
-              placeholder="Search tasks by name or description..."
+              placeholder=" Search..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="px-4 py-2 border rounded-md w-full max-w-md"
+              className="px-2 py-1 border rounded-md "
             />
+                        <div className="relative">
+              <button
+                onClick={() => setIsSortPopupOpen((prev) => !prev)}
+                className={`px-2 py-4 text-xs border rounded-md ${
+                  isDarkMode ? "hover:bg-gray-700 text-gray-200" : "hover:bg-gray-100 text-gray-800"
+                }`}
+              >
+                Sort
+              </button>
+              {isSortPopupOpen && (
+  <div
+    className={`absolute right-0 mt-2 w-64 rounded-md shadow-lg z-10 ${
+      isDarkMode ? "bg-gray-800 border border-gray-700" : "bg-white border border-gray-200"
+    }`}
+  >
+    <div className="p-3">
+      <p className={`mb-2 font-medium ${isDarkMode ? "text-gray-200" : "text-gray-800"}`}>
+        Sort Options
+      </p>
+      <ul className="space-y-1">
+        {[
+
+          "date",
+          "progress",
+          "attachments",
+          "todos",
+          "dueDateLongest",
+          "dueDateShortest",
+        ].map((option) => (
+          <li key={option}>
+            <button
+              onClick={() => handleSortSelection(option)}
+              className={`w-full text-left px-2 py-1 rounded ${
+                isDarkMode ? "text-gray-200 hover:bg-gray-700" : "text-gray-800 hover:bg-gray-200"
+              }`}
+            >
+              {option === "dueDateLongest"
+                ? "Due Date Difference (Longest)"
+                : option === "dueDateShortest"
+                ? "Due Date Difference (Shortest)"
+                : option === "mostAssigned"
+                ? "Most Assigned To"
+                : option.charAt(0).toUpperCase() + option.slice(1)}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </div>
+)}
+
+            </div>
+
+            </div>
+
           </div>
           <div className="flex items-center gap-3 mt-3 lg:mt-0">
             <TaskStatusTabs
@@ -197,95 +208,7 @@ const MyTasks = () => {
               activeTab={filterStatus}
               setActiveTab={setFilterStatus}
             />
-            <div className="hidden lg:flex gap-2">
-              <button
-                onClick={() => handleDownloadReport('excel')}
-                className="flex download-btn"
-              >
-                <LuFileSpreadsheet className="text-lg" />
-                <span>Excel</span>
-              </button>
-              <button
-                onClick={() => handleDownloadReport('pdf')}
-                className="flex download-btn bg-red-600 hover:bg-red-700"
-              >
-                <LuFileSpreadsheet className="text-lg" />
-                <span>PDF</span>
-              </button>
-            </div>
-            <div className="relative">
-              <button
-                onClick={() => setIsSortPopupOpen((prev) => !prev)}
-                className="px-4 py-2 border rounded-md hover:bg-gray-100"
-              >
-                Sort
-              </button>
-              {isSortPopupOpen && (
-                <div className="absolute right-0 mt-2 w-64 bg-white border rounded-md shadow-lg z-10">
-                  <div className="p-3">
-                    <p className="mb-2 font-medium">Sort Options</p>
-                    <ul className="space-y-1">
-                      <li>
-                        <button
-                          onClick={() => handleSortSelection("mostAssigned")}
-                          className="w-full text-left hover:bg-gray-200 px-2 py-1 rounded"
-                        >
-                          Most Assigned To
-                        </button>
-                      </li>
-                      <li>
-                        <button
-                          onClick={() => handleSortSelection("date")}
-                          className="w-full text-left hover:bg-gray-200 px-2 py-1 rounded"
-                        >
-                          Date (Newest First)
-                        </button>
-                      </li>
-                      <li>
-                        <button
-                          onClick={() => handleSortSelection("progress")}
-                          className="w-full text-left hover:bg-gray-200 px-2 py-1 rounded"
-                        >
-                          Progress
-                        </button>
-                      </li>
-                      <li>
-                        <button
-                          onClick={() => handleSortSelection("attachments")}
-                          className="w-full text-left hover:bg-gray-200 px-2 py-1 rounded"
-                        >
-                          Attachments
-                        </button>
-                      </li>
-                      <li>
-                        <button
-                          onClick={() => handleSortSelection("todos")}
-                          className="w-full text-left hover:bg-gray-200 px-2 py-1 rounded"
-                        >
-                          Todos
-                        </button>
-                      </li>
-                      <li>
-                        <button
-                          onClick={() => handleSortSelection("dueDateLongest")}
-                          className="w-full text-left hover:bg-gray-200 px-2 py-1 rounded"
-                        >
-                          Due Date Difference (Longest)
-                        </button>
-                      </li>
-                      <li>
-                        <button
-                          onClick={() => handleSortSelection("dueDateShortest")}
-                          className="w-full text-left hover:bg-gray-200 px-2 py-1 rounded"
-                        >
-                          Due Date Difference (Shortest)
-                        </button>
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-              )}
-            </div>
+
           </div>
         </div>
 

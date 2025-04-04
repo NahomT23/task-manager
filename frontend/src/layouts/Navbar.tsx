@@ -20,22 +20,21 @@ const Navbar = ({ activeMenu }: NavbarProps) => {
     const fetchOrganization = async () => {
       if (user?.organization && !orgName) { 
         try {
+
           const response = await axiosInstance.get(`/org/${user.organization}`);
           setOrgName(response.data.name);
         } catch (error) {
           console.error('Error fetching organization:', error);
-          setOrgName('Organization Name');
         }
       }
     };
-
+  
     fetchOrganization();
   }, [user?.organization, orgName, setOrgName]);
 
   useEffect(() => {
     document.body.classList.toggle('dark', isDarkMode);
   }, [isDarkMode]);
-
   return (
     <div className={`
       fixed top-0 left-0 right-0 z-50
