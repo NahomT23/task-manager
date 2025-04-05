@@ -10,14 +10,13 @@ import orgRoutes from './routes/organizationRoutes';
 import userRoutes from './routes/userRoutes';
 import taskRoutes from './routes/taskRoutes';
 import reportRoutes from './routes/reportsRoutes';
-import { apiLimiter, uploadLimiter } from './middlewares/rateLimitMiddleware';
+import { apiLimiter, authLimiter, uploadLimiter } from './middlewares/rateLimitMiddleware';
 configDotenv();
 
 const PORT = process.env.PORT  || 3000
 const app = express()
 
-app.set('trust proxy', true)
-
+app.set('trust proxy', 1)
 
 
 
@@ -47,7 +46,7 @@ app.use(helmet())
 
 
 
-app.use('/api/auth', authRoutes)
+app.use('/api/auth', authLimiter, authRoutes)
 app.use('/api/org', apiLimiter, orgRoutes);
 app.use('/api/users', apiLimiter, userRoutes);
 app.use('/api/tasks', apiLimiter, taskRoutes);
