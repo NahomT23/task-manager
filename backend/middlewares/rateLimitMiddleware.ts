@@ -10,24 +10,19 @@ export const apiLimiter = rateLimit({
   validate: { trustProxy: true }
 });
 
+
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 20,
   message: 'Too many login attempts, please try again later',
+  validate: { trustProxy: true }
 });
-
-
-// export const authLimiter = rateLimit({
-//   windowMs: 15 * 60 * 1000,
-//   max: 20,
-//   message: 'Too many login attempts, please try again later',
-//   validate: { trustProxy: true }
-// });
 
 
 export const uploadLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: 10,
-  message: 'Too many file uploads, please try again later'
+  message: 'Too many file uploads, please try again later',
+  
 });
 
