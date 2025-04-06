@@ -1,6 +1,5 @@
 import rateLimit from 'express-rate-limit';
 
-
 export const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
@@ -25,3 +24,14 @@ export const uploadLimiter = rateLimit({
   
 });
 
+export const chatbotLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000, 
+  max: 20, 
+  keyGenerator: (req) => {
+    return req.user?.id || req.ip;
+  },
+  message: 'Too many chatbot requests, please wait',
+  validate: { trustProxy: true },
+  standardHeaders: 'draft-7',
+  legacyHeaders: false
+});

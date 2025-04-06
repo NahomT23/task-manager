@@ -21,7 +21,6 @@ const chatbotRoutes_1 = __importDefault(require("./routes/chatbotRoutes"));
 (0, dotenv_1.configDotenv)();
 const PORT = process.env.PORT || 3000;
 const app = (0, express_1.default)();
-// REMOVE THIS AND TEST AGAIN
 app.set('trust proxy', 1);
 app.use((0, cors_1.default)({
     origin: process.env.CLIENT_URL,
@@ -33,18 +32,20 @@ app.options('*', (0, cors_1.default)({
     origin: process.env.CLIENT_URL,
     credentials: true
 }));
+app.use(express_1.default.json({ limit: '10kb' }));
+app.use(express_1.default.urlencoded({ limit: '10kb', extended: true }));
 app.use((0, express_mongo_sanitize_1.default)());
 app.use(express_1.default.json());
 app.use(express_1.default.urlencoded({ extended: true }));
 app.use((0, cookie_parser_1.default)());
 app.use('/uploads', rateLimitMiddleware_1.uploadLimiter, express_1.default.static('uploads'));
 app.use((0, helmet_1.default)());
-app.use('/api/auth', rateLimitMiddleware_1.authLimiter, authRoutes_1.default);
+app.use('/api/auth', authRoutes_1.default);
 app.use('/api/org', rateLimitMiddleware_1.apiLimiter, organizationRoutes_1.default);
 app.use('/api/users', rateLimitMiddleware_1.apiLimiter, userRoutes_1.default);
 app.use('/api/tasks', rateLimitMiddleware_1.apiLimiter, taskRoutes_1.default);
 app.use('/api/reports', rateLimitMiddleware_1.apiLimiter, reportsRoutes_1.default);
-app.use('/api/bot', chatbotRoutes_1.default);
+app.use('/api/bot', rateLimitMiddleware_1.chatbotLimiter, chatbotRoutes_1.default);
 (0, db_1.default)();
 app.listen(PORT, () => {
     console.log(`server is running on port: ${PORT}`);

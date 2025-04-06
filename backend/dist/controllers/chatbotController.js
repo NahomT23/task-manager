@@ -151,17 +151,27 @@ function fetchOrganizationData(userId) {
 const chatbot = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     try {
+        if (typeof req.body.message !== 'string') {
+            throw new Error('Invalid input type');
+        }
         const data = yield fetchOrganizationData((_a = req.user) === null || _a === void 0 ? void 0 : _a.id);
         const originalMessage = req.body.message || '';
+        // Validate and sanitize the original user input
+        const safeOriginalMessage = (0, chatbotService_1.validateInput)(originalMessage);
+        // Reject the request if sanitization altered the message (indicating a possible injection attempt)
+        if (safeOriginalMessage !== originalMessage) {
+            throw new Error('Invalid input detected');
+        }
         const greetingRegex = /^(hey|hello|hi|good morning|good afternoon)\b/i;
-        if (greetingRegex.test(originalMessage.trim()) || originalMessage.trim() === '') {
+        if (greetingRegex.test(safeOriginalMessage.trim()) || safeOriginalMessage.trim() === '') {
             const greetingResponsePseudo = `Hey ${data.organization.pseudo_data.admin_pseudo.pseudo_name}, how may I assist you today?`;
             const greetingResponseReal = (0, chatbotService_1.replacePseudoWithReal)(greetingResponsePseudo, data);
             res.status(200).json({ response: greetingResponseReal });
             return;
         }
+        const securedData = (0, chatbotService_1.secureContextData)(data);
         // Convert the real message into a pseudo context.
-        const pseudoMessage = (0, chatbotService_1.replaceRealWithPseudo)(originalMessage, data);
+        const pseudoMessage = (0, chatbotService_1.replaceRealWithPseudo)(safeOriginalMessage, data);
         // Build the pseudo data context for the AI.
         const pseudoData = {
             organization: data.organization.pseudo_data,
@@ -187,14 +197,17 @@ const chatbot = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             })),
             invitations: data.organization.invitations
         };
-        const instructions = `You are ${data.organization.pseudo_data.pseudo_name}'s personal AI assistant.
-  If a user asks about any topic outside ${data.organization.pseudo_data.pseudo_name}, respond with:
-  "I am ${data.organization.pseudo_data.pseudo_name}'s personal AI assistant and I can’t answer anything outside ${data.organization.pseudo_data.pseudo_name}."`;
+        // Include the safety prompt in the system instructions.
+        const instructions = `${chatbotService_1.SAFETY_PROMPT}
+You are ${securedData.organization.pseudo_data.pseudo_name}'s personal AI assistant.
+If a user asks about any topic outside ${securedData.organization.pseudo_data.pseudo_name}, respond with:
+"I am ${securedData.organization.pseudo_data.pseudo_name}'s personal AI assistant and I can’t answer anything outside ${securedData.organization.pseudo_data.pseudo_name}."`;
         const fullMessage = `${instructions}
-  Data Context:
-  ${JSON.stringify(pseudoData, null, 2)}
-  User Query:
-  ${pseudoMessage}`;
+Data Context:
+${JSON.stringify(pseudoData, null, 2)}
+
+User Query:
+${pseudoMessage}`;
         const chatSession = model.startChat({
             history: [{
                     role: 'user',
@@ -208,9 +221,12 @@ const chatbot = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         });
         const result = yield chatSession.sendMessage(fullMessage);
         const pseudoResponse = result.response.text();
-        // Convert the AI's pseudo response back into real values.
-        console.log(pseudoResponse);
-        const finalResponse = (0, chatbotService_1.replacePseudoWithReal)(pseudoResponse, data);
+        // Validate and sanitize the AI's pseudo response before converting back to real values.
+        const safePseudoResponse = (0, chatbotService_1.validateInput)(pseudoResponse);
+        if (safePseudoResponse !== pseudoResponse) {
+            throw new Error('Generated response contains unsafe content');
+        }
+        const finalResponse = (0, chatbotService_1.replacePseudoWithReal)(safePseudoResponse, data);
         res.status(200).json({ response: finalResponse });
     }
     catch (error) {

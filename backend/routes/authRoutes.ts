@@ -6,9 +6,9 @@ import { authLimiter, uploadLimiter } from '../middlewares/rateLimitMiddleware';
 
 const authRoutes = Router();
 
-authRoutes.post("/sign-up",  upload.single("image"), signup);
-authRoutes.post("/sign-in",  signin);
-authRoutes.get("/profile", protect, getUserProfile);
-authRoutes.put("/profile", protect, upload.single("image"), updateUserProfile);
+authRoutes.post("/sign-up", authLimiter, uploadLimiter, upload.single("image"), signup);
+authRoutes.post("/sign-in",  authLimiter, signin);
+authRoutes.get("/profile", authLimiter,  protect, getUserProfile);
+authRoutes.put("/profile", uploadLimiter, protect, upload.single("image"), updateUserProfile);
 
 export default authRoutes;
