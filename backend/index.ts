@@ -54,7 +54,9 @@ app.use('/api/reports', apiLimiter, reportRoutes);
 app.use('/api/bot', chatbotRoute)
 
 
+connectToDB()
+
 app.listen(PORT, () => {
     console.log(`server is running on port: ${PORT}`)
-    connectToDB()
+    
 })

@@ -45,7 +45,7 @@ app.use('/api/users', rateLimitMiddleware_1.apiLimiter, userRoutes_1.default);
 app.use('/api/tasks', rateLimitMiddleware_1.apiLimiter, taskRoutes_1.default);
 app.use('/api/reports', rateLimitMiddleware_1.apiLimiter, reportsRoutes_1.default);
 app.use('/api/bot', chatbotRoutes_1.default);
+(0, db_1.default)();
 app.listen(PORT, () => {
     console.log(`server is running on port: ${PORT}`);
-    (0, db_1.default)();
 });
