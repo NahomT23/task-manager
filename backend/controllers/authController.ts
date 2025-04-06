@@ -1,15 +1,11 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
 import { validationResult } from 'express-validator';
 import User from '../models/User';
 import Organization from '../models/Organization';
 import mongoose from 'mongoose';
+import { generateToken } from '../services/generate';
 
-// Generate JWT Token
-const generateToken = (userId: string): string => {
-  return jwt.sign({ id: userId }, process.env.JWT_SECRET!, { expiresIn: '7d' });
-};
 
 // SIGN UP 
 const signup = async (req: Request, res: Response): Promise<void> => {

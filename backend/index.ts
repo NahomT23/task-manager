@@ -11,30 +11,30 @@ import userRoutes from './routes/userRoutes';
 import taskRoutes from './routes/taskRoutes';
 import reportRoutes from './routes/reportsRoutes';
 import { apiLimiter, authLimiter, uploadLimiter } from './middlewares/rateLimitMiddleware';
+import chatbotRoute from './routes/chatbotRoutes';
 configDotenv();
 
-const PORT = process.env.PORT  || 3000
+const PORT = process.env.PORT || 3000
 const app = express()
 
+
+
+// REMOVE THIS AND TEST AGAIN
 app.set('trust proxy', 1)
 
-
-
-// app.use(cors({
-//     origin: process.env.CLIENT_URL,
-//     credentials: true, 
-//     methods: ['GET', 'POST', 'PUT', 'DELETE'],
-//     allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
-//   }))
+app.use(cors({
+    origin: process.env.CLIENT_URL,
+    credentials: true, 
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
+  }))
   
 
-//   app.options('*', cors({
-//     origin: process.env.CLIENT_URL,
-//     credentials: true
-//   }));
+  app.options('*', cors({
+    origin: process.env.CLIENT_URL,
+    credentials: true
+  }));
 
-
-app.use(cors())
 
 
 app.use(mongoSanitize())
@@ -51,6 +51,7 @@ app.use('/api/org', apiLimiter, orgRoutes);
 app.use('/api/users', apiLimiter, userRoutes);
 app.use('/api/tasks', apiLimiter, taskRoutes);
 app.use('/api/reports', apiLimiter, reportRoutes);
+app.use('/api/bot', chatbotRoute)
 
 
 app.listen(PORT, () => {

@@ -21,4 +21,5 @@ orgRoutes.get('/:id', protect, getOrganizationById);
 // UPDATING ORG NAME
 orgRoutes.put('/update-name', protect, adminOnly, updateOrganizationName);
 
+
 export default orgRoutes

@@ -14,14 +14,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.updateUserProfile = exports.getUserProfile = exports.signin = exports.signup = void 0;
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
-const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const express_validator_1 = require("express-validator");
 const User_1 = __importDefault(require("../models/User"));
 const Organization_1 = __importDefault(require("../models/Organization"));
-// Generate JWT Token
-const generateToken = (userId) => {
-    return jsonwebtoken_1.default.sign({ id: userId }, process.env.JWT_SECRET, { expiresIn: '7d' });
-};
+const generate_1 = require("../services/generate");
 // SIGN UP 
 const signup = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const errors = (0, express_validator_1.validationResult)(req);
@@ -73,7 +69,7 @@ const signup = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
                 $push: { members: newUser._id },
             });
         }
-        const token = generateToken(newUser._id.toString());
+        const token = (0, generate_1.generateToken)(newUser._id.toString());
         res.status(201).json({
             message: 'User created successfully',
             token,
@@ -107,7 +103,7 @@ const signin = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             res.status(400).json({ message: 'Invalid credentials' });
             return;
         }
-        const token = generateToken(user._id.toString());
+        const token = (0, generate_1.generateToken)(user._id.toString());
         res.status(200).json({
             message: 'User signed in successfully',
             token,
