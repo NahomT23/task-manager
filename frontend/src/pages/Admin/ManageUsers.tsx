@@ -101,9 +101,9 @@ const ManageUsers = () => {
   return (
     <DashboardLayout activeMenu="Team Members">
       <div className="my-5">
-        <div className="flex flex-col gap-4">
-          {/* Header Section */}
-          <div className="flex justify-between items-center">
+        {/* <div className="flex flex-col gap-4"> */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between">
+          <div className="flex justify-between items-center gap-3">
             <h2 className="text-xl md:text-xl font-medium">Team Members</h2>
             <div className="relative">
               <button

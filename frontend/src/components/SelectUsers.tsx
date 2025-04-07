@@ -4,13 +4,9 @@ import { LuUsers } from "react-icons/lu";
 import Modal from "../layouts/Modal";
 import AvatarGroup, { getInitialsColor } from "../layouts/AvatarGroup";
 import { useThemeStore } from "../store/themeStore";
+import { User } from "../types";
 
-interface User {
-  _id: string;
-  name: string;
-  email: string;
-  profileImageUrl: string;
-}
+
 
 interface SelectUsersProps {
   selectedUsers: string[];

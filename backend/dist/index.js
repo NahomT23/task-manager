@@ -40,7 +40,7 @@ app.use('/uploads', rateLimitMiddleware_1.uploadLimiter, express_1.default.stati
 app.use((0, helmet_1.default)());
 app.use('/api/auth', authRoutes_1.default);
 app.use('/api/org', rateLimitMiddleware_1.apiLimiter, organizationRoutes_1.default);
-app.use('/api/users', rateLimitMiddleware_1.apiLimiter, userRoutes_1.default);
+app.use('/api/users', userRoutes_1.default);
 app.use('/api/tasks', rateLimitMiddleware_1.apiLimiter, taskRoutes_1.default);
 app.use('/api/reports', rateLimitMiddleware_1.apiLimiter, reportsRoutes_1.default);
 app.use('/api/bot', rateLimitMiddleware_1.chatbotLimiter, chatbotRoutes_1.default);

@@ -45,7 +45,7 @@ app.use(helmet())
 
 app.use('/api/auth', authRoutes)
 app.use('/api/org', apiLimiter, orgRoutes);
-app.use('/api/users', apiLimiter, userRoutes);
+app.use('/api/users', userRoutes);
 app.use('/api/tasks', apiLimiter, taskRoutes);
 app.use('/api/reports', apiLimiter, reportRoutes);
 app.use('/api/bot', chatbotLimiter, chatbotRoute)
