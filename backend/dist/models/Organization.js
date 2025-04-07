@@ -40,13 +40,5 @@ const OrganizationSchema = new mongoose_1.default.Schema({
 }, {
     timestamps: true,
 });
-OrganizationSchema.pre('save', function (next) {
-    return __awaiter(this, void 0, void 0, function* () {
-        if (!this.isNew)
-            return next();
-        this.pseudo_name = yield (0, generate_1.generateUniquePseudo)(Organization, 'org', 'pseudo_name');
-        next();
-    });
-});
 const Organization = mongoose_1.default.model('Organization', OrganizationSchema);
 exports.default = Organization;

@@ -17,6 +17,7 @@ const crypto_1 = __importDefault(require("crypto"));
 const Organization_1 = __importDefault(require("../models/Organization"));
 const User_1 = __importDefault(require("../models/User"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+const generate_1 = require("../services/generate");
 const generateInvitationCode = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         if (!req.user || req.user.role !== 'admin') {
@@ -67,15 +68,17 @@ const createOrganization = (req, res) => __awaiter(void 0, void 0, void 0, funct
             res.status(400).json({ message: 'User is already an admin' });
             return;
         }
-        // Create organization
+        // Generate a unique pseudo_name 
+        const pseudo_name = yield (0, generate_1.generateUniquePseudo)(Organization_1.default, 'org', 'pseudo_name');
         const organization = new Organization_1.default({
             name,
+            pseudo_name,
             admin: req.user.id,
             members: [req.user.id],
             invitations: [],
         });
         yield organization.save();
-        // Update user role and organization (remove populate)
+        // Update user role and organization
         const user = yield User_1.default.findByIdAndUpdate(req.user.id, { role: 'admin', organization: organization._id }, { new: true });
         if (!user) {
             res.status(500).json({ message: 'Failed to update user' });

@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import Organization from '../models/Organization';
 import User from '../models/User';
 import jwt from 'jsonwebtoken';
+import { generateUniquePseudo } from '../services/generate';
 
 export const generateInvitationCode = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -50,9 +51,9 @@ export const generateInvitationCode = async (req: Request, res: Response): Promi
     res.status(500).json({ message: 'Server error' });
   }
 };
+
 export const createOrganization = async (req: Request, res: Response): Promise<void> => {
   try {
-
     if (!req.user || req.user.role !== 'idle') {
       res.status(403).json({ message: 'Unauthorized to create organization' });
       return;
@@ -64,16 +65,19 @@ export const createOrganization = async (req: Request, res: Response): Promise<v
       return;
     }
 
-
     const existingOrg = await Organization.findOne({ admin: req.user.id });
     if (existingOrg) {
       res.status(400).json({ message: 'User is already an admin' });
       return;
     }
 
-    // Create organization
+    // Generate a unique pseudo_name 
+    const pseudo_name = await generateUniquePseudo(Organization, 'org', 'pseudo_name');
+
+
     const organization = new Organization({
       name,
+      pseudo_name,
       admin: req.user.id,
       members: [req.user.id],
       invitations: [],
@@ -81,20 +85,17 @@ export const createOrganization = async (req: Request, res: Response): Promise<v
 
     await organization.save();
 
-    // Update user role and organization (remove populate)
+    // Update user role and organization
     const user = await User.findByIdAndUpdate(
       req.user.id,
       { role: 'admin', organization: organization._id },
       { new: true }
     );
 
-
-
     if (!user) {
       res.status(500).json({ message: 'Failed to update user' });
       return;
     }
-
 
     const token = jwt.sign(
       { 
@@ -116,7 +117,7 @@ export const createOrganization = async (req: Request, res: Response): Promise<v
     console.error(error);
     res.status(500).json({ message: 'Server error' });
   }
-}
+};
 
 export const joinOrganization = async (req: Request, res: Response): Promise<void> => {
   try {

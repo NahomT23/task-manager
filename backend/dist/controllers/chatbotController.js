@@ -178,6 +178,7 @@ const chatbot = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             members: data.members.map((member) => ({
                 pseudo_name: member.pseudo_data.pseudo_name,
                 pseudo_email: member.pseudo_data.pseudo_email,
+                created_at: member.real_data.created_at,
                 role: member.role,
                 task_stats: member.task_stats
             })),
@@ -221,11 +222,9 @@ ${pseudoMessage}`;
         });
         const result = yield chatSession.sendMessage(fullMessage);
         const pseudoResponse = result.response.text();
+        console.log(pseudoResponse);
         // Validate and sanitize the AI's pseudo response before converting back to real values.
         const safePseudoResponse = (0, chatbotService_1.validateInput)(pseudoResponse);
-        if (safePseudoResponse !== pseudoResponse) {
-            throw new Error('Generated response contains unsafe content');
-        }
         const finalResponse = (0, chatbotService_1.replacePseudoWithReal)(safePseudoResponse, data);
         res.status(200).json({ response: finalResponse });
     }

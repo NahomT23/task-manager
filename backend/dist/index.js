@@ -32,8 +32,6 @@ app.options('*', (0, cors_1.default)({
     origin: process.env.CLIENT_URL,
     credentials: true
 }));
-app.use(express_1.default.json({ limit: '10kb' }));
-app.use(express_1.default.urlencoded({ limit: '10kb', extended: true }));
 app.use((0, express_mongo_sanitize_1.default)());
 app.use(express_1.default.json());
 app.use(express_1.default.urlencoded({ extended: true }));

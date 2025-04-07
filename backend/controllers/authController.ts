@@ -4,10 +4,8 @@ import { validationResult } from 'express-validator';
 import User from '../models/User';
 import Organization from '../models/Organization';
 import mongoose from 'mongoose';
-import { generateToken } from '../services/generate';
+import { generateToken, generateUniquePseudo } from '../services/generate';
 
-
-// SIGN UP 
 const signup = async (req: Request, res: Response): Promise<void> => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -18,21 +16,25 @@ const signup = async (req: Request, res: Response): Promise<void> => {
   const { name, email, password, invitationCode } = req.body;
 
   try {
+    // Check if user already exists
     const userExists = await User.findOne({ email });
     if (userExists) {
       res.status(400).json({ message: 'User already exists' });
       return;
     }
 
+    // Hash password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
+    // Process profile image
     const profileImageUrl = req.file
       ? `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`
       : '';
 
+    // Process invitation code
     let organizationId: mongoose.Types.ObjectId | null = null;
-    let assignedRole = 'idle'; 
+    let assignedRole = 'idle';
 
     if (invitationCode) {
       const organization = await Organization.findOne({ "invitations.token": invitationCode });
@@ -54,6 +56,21 @@ const signup = async (req: Request, res: Response): Promise<void> => {
       assignedRole = 'member';
     }
 
+ 
+
+    const pseudo_name = await generateUniquePseudo(
+      User,
+      'name',
+      'pseudo_name'
+    );
+
+    const pseudo_email = await generateUniquePseudo(
+      User,
+      'email',
+      'pseudo_email'
+    );
+
+    // Create new user
     const newUser = new User({
       name,
       email,
@@ -61,16 +78,20 @@ const signup = async (req: Request, res: Response): Promise<void> => {
       profileImageUrl,
       role: assignedRole,
       organization: organizationId,
+      pseudo_name,
+      pseudo_email
     });
 
     await newUser.save();
 
+    // Update organization if invited
     if (invitationCode && organizationId) {
       await Organization.findByIdAndUpdate(organizationId, {
         $push: { members: newUser._id },
       });
     }
 
+    // Generate JWT token
     const token = generateToken(newUser._id.toString());
 
     res.status(201).json({
@@ -90,6 +111,7 @@ const signup = async (req: Request, res: Response): Promise<void> => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
 // SIGN IN 
 const signin = async (req: Request, res: Response): Promise<void> => {
   const { email, password }: { email: string; password: string } = req.body;

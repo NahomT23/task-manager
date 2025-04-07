@@ -18,7 +18,6 @@ const express_validator_1 = require("express-validator");
 const User_1 = __importDefault(require("../models/User"));
 const Organization_1 = __importDefault(require("../models/Organization"));
 const generate_1 = require("../services/generate");
-// SIGN UP 
 const signup = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const errors = (0, express_validator_1.validationResult)(req);
     if (!errors.isEmpty()) {
@@ -27,16 +26,20 @@ const signup = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     }
     const { name, email, password, invitationCode } = req.body;
     try {
+        // Check if user already exists
         const userExists = yield User_1.default.findOne({ email });
         if (userExists) {
             res.status(400).json({ message: 'User already exists' });
             return;
         }
+        // Hash password
         const salt = yield bcryptjs_1.default.genSalt(10);
         const hashedPassword = yield bcryptjs_1.default.hash(password, salt);
+        // Process profile image
         const profileImageUrl = req.file
             ? `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`
             : '';
+        // Process invitation code
         let organizationId = null;
         let assignedRole = 'idle';
         if (invitationCode) {
@@ -55,6 +58,9 @@ const signup = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             organizationId = organization._id;
             assignedRole = 'member';
         }
+        const pseudo_name = yield (0, generate_1.generateUniquePseudo)(User_1.default, 'name', 'pseudo_name');
+        const pseudo_email = yield (0, generate_1.generateUniquePseudo)(User_1.default, 'email', 'pseudo_email');
+        // Create new user
         const newUser = new User_1.default({
             name,
             email,
@@ -62,13 +68,17 @@ const signup = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             profileImageUrl,
             role: assignedRole,
             organization: organizationId,
+            pseudo_name,
+            pseudo_email
         });
         yield newUser.save();
+        // Update organization if invited
         if (invitationCode && organizationId) {
             yield Organization_1.default.findByIdAndUpdate(organizationId, {
                 $push: { members: newUser._id },
             });
         }
+        // Generate JWT token
         const token = (0, generate_1.generateToken)(newUser._id.toString());
         res.status(201).json({
             message: 'User created successfully',

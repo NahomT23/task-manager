@@ -4,8 +4,7 @@ import jwt from 'jsonwebtoken';
 
 export const generateToken = (userId: string): string => {
     return jwt.sign({ id: userId }, process.env.JWT_SECRET!, { expiresIn: '7d' });
-  };
-
+};
 
 export const generateSecureHash = (length = 10): string => {
   return crypto.randomBytes(Math.ceil(length / 2))

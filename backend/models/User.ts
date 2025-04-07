@@ -50,14 +50,6 @@ const UserSchema = new mongoose.Schema(
 );
 
 
-UserSchema.pre('save', async function (next) {
-  if (!this.isNew) return next();
-  
-  this.pseudo_name = await generateUniquePseudo(User, 'user', 'pseudo_name');
-  this.pseudo_email = await generateUniquePseudo(User, 'email', 'pseudo_email');
-  next();
-});
-
 
 const User = mongoose.model('User', UserSchema);
 

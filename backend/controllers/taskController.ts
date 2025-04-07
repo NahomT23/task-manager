@@ -1,10 +1,14 @@
-
 import { Request, Response } from "express";
 import Task from "../models/Task";
+import User from "../models/User";
+import { taskAssignedTemplate, taskCompletedTemplate } from "../templates/emailTemplate";
+import { sendEmail } from "../config/mailer";
+import { configDotenv } from "dotenv";
+
+configDotenv();
 
 
 // Returns a summary of tasks for the organization (for admin dashboard)
-
 export const getDashboardData = async (req: Request, res: Response) => {
   try {
     const organizationId = req.user?.organization;
@@ -204,10 +208,93 @@ export const getTasksById = async (req: Request, res: Response) => {
   }
 };
 
-// Creates a new task (admin only)
+// // Creates a new task (admin only)
+// export const createTask = async (req: Request, res: Response) => {
+//   try {
+
+//     const {
+//       title,
+//       description,
+//       priority,
+//       status,
+//       dueDate,
+//       assignedTo,
+//       attachments,
+//       todoChecklist,
+//       progress,
+//     } = req.body;
+
+
+//     const organization = req.user!.organization;
+//     if (!organization) {
+//       res.status(400).json({ message: "Organization not found." });
+//       return;
+//     }
+
+//     const assignedArray = Array.isArray(assignedTo) ? 
+//     assignedTo : 
+//     [assignedTo].filter(Boolean);
+
+
+
+//     const newTask = new Task({
+//       title,
+//       description,
+//       priority,
+//       status: "pending",
+//       dueDate,
+//       assignedTo: assignedArray,
+//       createdBy: req.user!._id,
+//       attachments,
+//       todoChecklist,
+//       progress,
+//       organization,
+//     });
+
+//     const savedTask = await newTask.save();
+
+
+
+//         // Send assignment emails
+//         const assignedUsers = await User.find({ _id: { $in: assignedArray } });
+//         const adminEmail = process.env.ADMIN_EMAIL;
+    
+//         assignedUsers.forEach(async (user) => {
+//           const emailHtml = `
+//             <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #ddd;">
+//               <h2 style="color: #2c3e50;">New Task Assignment</h2>
+//               <p>Hello ${user.name},</p>
+//               <p>You've been assigned a new task:</p>
+//               <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+//                 <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Title:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${title}</td></tr>
+//                 <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Description:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${description}</td></tr>
+//                 <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Due Date:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${dueDate}</td></tr>
+//                 <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Priority:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${priority}</td></tr>
+//               </table>
+//               <p style="color: #3498db;">View Task: <a href="${process.env.FRONTEND_URL}/task/${savedTask._id}">Task Details</a></p>
+//             </div>
+//           `;
+    
+//           try {
+//             await sendEmail({
+//               to: user.email,
+//               subject: `New Task Assigned: ${title}`,
+//               html: emailHtml
+//             });
+//           } catch (emailError) {
+//             console.error('Email send failed:', emailError);
+//           }
+//         });
+
+//     res.status(201).json({ task: savedTask });
+//   } catch (error) {
+//     console.error("Error in createTask:", error);
+//     res.status(500).json({ message: "Server error." });
+//   }
+// };
+
 export const createTask = async (req: Request, res: Response) => {
   try {
-
     const {
       title,
       description,
@@ -220,7 +307,6 @@ export const createTask = async (req: Request, res: Response) => {
       progress,
     } = req.body;
 
-
     const organization = req.user!.organization;
     if (!organization) {
       res.status(400).json({ message: "Organization not found." });
@@ -228,10 +314,8 @@ export const createTask = async (req: Request, res: Response) => {
     }
 
     const assignedArray = Array.isArray(assignedTo) ? 
-    assignedTo : 
-    [assignedTo].filter(Boolean);
-
-
+      assignedTo : 
+      [assignedTo].filter(Boolean);
 
     const newTask = new Task({
       title,
@@ -248,6 +332,24 @@ export const createTask = async (req: Request, res: Response) => {
     });
 
     const savedTask = await newTask.save();
+
+    // Send assignment emails
+    const assignedUsers = await User.find({ _id: { $in: assignedArray } });
+
+    assignedUsers.forEach(async (user) => {
+      const emailHtml = taskAssignedTemplate(savedTask, user.name, process.env.FRONTEND_URL || '');
+
+      try {
+        await sendEmail({
+          to: user.email,
+          subject: `New Task Assigned: ${title}`,
+          html: emailHtml
+        });
+      } catch (emailError) {
+        console.error('Email send failed:', emailError);
+      }
+    });
+
     res.status(201).json({ task: savedTask });
   } catch (error) {
     console.error("Error in createTask:", error);
@@ -255,8 +357,7 @@ export const createTask = async (req: Request, res: Response) => {
   }
 };
 
-
-// Updates the todo checklist and the status for the user
+// update task cehcklist
 export const updateTaskCheckList = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -282,6 +383,32 @@ export const updateTaskCheckList = async (req: Request, res: Response) => {
     if (!task) {
       res.status(404).json({ message: "Task not found." });
       return;
+    }
+
+    if (newStatus === 'completed') {
+      const task = await Task.findById(id).populate('assignedTo'); 
+      const adminUsers = await User.find({
+        organization: task?.organization, 
+        role: 'admin'
+      });
+  
+      const userNames = task?.assignedTo?.filter(user => user !== null).map(user => (user as any).name) || [];
+      
+      const emailHtml = taskCompletedTemplate(task, userNames, process.env.FRONTEND_URL || '');
+
+
+
+      adminUsers.forEach(async (admin) => {
+        try {
+          await sendEmail({
+            to: admin.email,
+            subject: `Task Completed: ${task?.title}`,
+            html: emailHtml
+          });
+        } catch (emailError) {
+          console.error(`Failed to notify admin ${admin.email}:`, emailError);
+        }
+      });
     }
 
     res.status(200).json({ task });

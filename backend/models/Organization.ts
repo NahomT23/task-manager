@@ -42,12 +42,6 @@ const OrganizationSchema = new mongoose.Schema(
 
 
 
-OrganizationSchema.pre('save', async function (next) {
-  if (!this.isNew) return next();
-  
-  this.pseudo_name = await generateUniquePseudo(Organization, 'org', 'pseudo_name');
-  next();
-});
 
 const Organization = mongoose.model('Organization', OrganizationSchema);
 
