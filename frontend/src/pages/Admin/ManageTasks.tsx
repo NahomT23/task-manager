@@ -112,6 +112,7 @@ const ManageTasks = () => {
       link.parentNode?.removeChild(link);
       window.URL.revokeObjectURL(url);
   
+      // Success toast based on file format
       if (format === "excel") {
         toast.success("Excel file downloaded successfully!");
       } else if (format === "pdf") {
@@ -176,9 +177,12 @@ const ManageTasks = () => {
       <div className="my-5">
         <div className="flex flex-col gap-4">
           {/* Header Section */}
+
+
+
           <div className="flex justify-between items-center">
             <h2 className="text-xl md:text-xl font-medium">My Tasks</h2>
-            <div className="relative mr-4">
+            <div className="relative mr-5">
               <button
                 onClick={() => setIsDownloadPopupOpen((prev) => !prev)}
                 className={`px-2 py-1 text-xs border rounded-md ${
@@ -223,6 +227,9 @@ const ManageTasks = () => {
               )}
             </div>
           </div>
+
+
+          
   
           {/* Search and Filters Section */}
           <div className="flex flex-col md:flex-row gap-3">
@@ -232,7 +239,7 @@ const ManageTasks = () => {
               placeholder=" Search.."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="px-2 py-1 border rounded-md max-w-xs"
+              className="px-2 py-1 border rounded-md"
             />
               <div className="relative">
                 <button
@@ -300,41 +307,38 @@ const ManageTasks = () => {
           </div>
   
           {/* Tasks Grid */}
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4  items-center justify-center">
-  {loading ? (
-    Array.from({ length: 6 }).map((_, index) => <TaskCardSkeleton key={index} />)
-  ) : filteredAndSortedTasks.length > 0 ? (
-    filteredAndSortedTasks.map((task) => (
-      <div key={task.id} className="w-full max-w-sm mx-auto">
-              <TaskCard
-          id={task.id}
-          title={task.title}
-          description={task.description}
-          priority={task.priority}
-          status={task.status}
-          progress={task.progress}
-          createdAt={task.createdAt}
-          dueDate={task.dueDate}
-          assignedTo={task.assignedTo.map((user) => ({
-            _id: user._id,
-            profileImageUrl: user.profileImageUrl,
-            name: user.name,
-          }))}
-          attachmentCount={task.attachments?.length || 0}
-          completedTodo={task.completedTodoCount || 0}
-          todoChecklist={task.todoChecklist || []}
-          onClick={() => handleClick(task)}
-        />
-      </div>
-    ))
-  ) : (
-    <div className="col-span-full text-center py-4">
-      No tasks found matching current filters
-    </div>
-  )}
-</div>
-
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+            {loading ? (
+              Array.from({ length: 6 }).map((_, index) => <TaskCardSkeleton key={index} />)
+            ) : filteredAndSortedTasks.length > 0 ? (
+              filteredAndSortedTasks.map((task) => (
+                <TaskCard
+                  key={task.id}
+                  id={task.id}
+                  title={task.title}
+                  description={task.description}
+                  priority={task.priority}
+                  status={task.status}
+                  progress={task.progress}
+                  createdAt={task.createdAt}
+                  dueDate={task.dueDate}
+                  assignedTo={task.assignedTo.map((user) => ({
+                    _id: user._id,
+                    profileImageUrl: user.profileImageUrl,
+                    name: user.name,
+                  }))}
+                  attachmentCount={task.attachments?.length || 0}
+                  completedTodo={task.completedTodoCount || 0}
+                  todoChecklist={task.todoChecklist || []}
+                  onClick={() => handleClick(task)}
+                />
+              ))
+            ) : (
+              <div className="col-span-full text-center py-4">
+                No tasks found matching current filters
+              </div>
+            )}
+          </div>
         </div>
         </div>
       </DashboardLayout>

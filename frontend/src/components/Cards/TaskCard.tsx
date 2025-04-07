@@ -84,9 +84,9 @@ export const TaskCard: React.FC<TaskCardProps> = ({
       }`}
       onClick={onClick}
     >
-      <div className="flex items-end gap-3 px-4">
+      <div className="flex items-center gap-3 px-4">
         <div
-          className={`text-[11px] font-medium px-4 py-0.5 rounded ${
+          className={`text-[9px] font-medium px-4 py-0.5 rounded ${
             isDarkMode
               ? getStatusTagColor()
                   .replace(/bg-(.*?)\s/, "bg-opacity-20 ")

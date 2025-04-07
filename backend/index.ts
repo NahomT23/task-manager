@@ -10,7 +10,7 @@ import orgRoutes from './routes/organizationRoutes';
 import userRoutes from './routes/userRoutes';
 import taskRoutes from './routes/taskRoutes';
 import reportRoutes from './routes/reportsRoutes';
-import { apiLimiter, authLimiter, chatbotLimiter, uploadLimiter } from './middlewares/rateLimitMiddleware';
+import { apiLimiter, chatbotLimiter, uploadLimiter } from './middlewares/rateLimitMiddleware';
 import chatbotRoute from './routes/chatbotRoutes';
 configDotenv();
 
@@ -38,14 +38,14 @@ app.use(mongoSanitize())
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser())
-app.use('/uploads', uploadLimiter, express.static('uploads'));
+app.use('/uploads', express.static('uploads'));
 app.use(helmet())
 
 
 
 app.use('/api/auth', authRoutes)
 app.use('/api/org', apiLimiter, orgRoutes);
-app.use('/api/users', userRoutes);
+app.use('/api/users', apiLimiter, userRoutes);
 app.use('/api/tasks', apiLimiter, taskRoutes);
 app.use('/api/reports', apiLimiter, reportRoutes);
 app.use('/api/bot', chatbotLimiter, chatbotRoute)
