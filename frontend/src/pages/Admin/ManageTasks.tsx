@@ -239,12 +239,12 @@ const ManageTasks = () => {
               placeholder=" Search.."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="px-2 py-1 border rounded-md"
+              className="px-2 py-1 border rounded-md max-w-xs"
             />
               <div className="relative">
                 <button
                   onClick={() => setIsSortPopupOpen((prev) => !prev)}
-                  className={`px-2 py-4 text-xs border rounded-md ${
+                  className={`px-2 py-4 text-xs border rounded-md max-w-xs ${
                     isDarkMode ? "hover:bg-gray-700 text-gray-200" : "hover:bg-gray-100 text-gray-800"
                   }`}
                 >

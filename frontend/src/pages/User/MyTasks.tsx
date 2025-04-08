@@ -149,151 +149,139 @@ const MyTasks = () => {
     };
 
   return (
-<DashboardLayout activeMenu="Manage Tasks">
-  <div className="my-5">
-    <div className="flex items-center justify-between">
-      <h2 className="text-xl md:text-xl font-medium">My Tasks</h2>
-      <div className="relative">
-        <button
-          onClick={() => setIsDownloadPopupOpen((prev) => !prev)}
-          className={`px-2 py-1 text-xs border rounded-md ${
-            isDarkMode
-              ? "hover:bg-gray-700 text-gray-200"
-              : "hover:bg-gray-100 text-gray-800"
-          }`}
-        >
-          Download Report
-        </button>
-        {isDownloadPopupOpen && (
-          <div
-            className={`absolute right-0 mt-2 w-40 rounded-md shadow-lg z-10 ${
-              isDarkMode
-                ? "bg-gray-800 border border-gray-700"
-                : "bg-white border border-gray-200"
-            }`}
-          >
-            <div className="p-3">
-              <ul className="space-y-1">
-                <li>
-                  <button
-                    onClick={() => handleDownloadReport("excel")}
-                    className={`w-full flex items-center gap-2 px-2 py-1 rounded ${
-                      isDarkMode
-                        ? "text-gray-200 hover:bg-gray-700"
-                        : "text-gray-800 hover:bg-gray-200"
-                    }`}
-                  >
-                    <LuFileSpreadsheet className="text-lg" />
-                    Excel
-                  </button>
-                </li>
-                <li>
-                  <button
-                    onClick={() => handleDownloadReport("pdf")}
-                    className={`w-full flex items-center gap-2 px-2 py-1 rounded ${
-                      isDarkMode
-                        ? "text-gray-200 hover:bg-gray-700"
-                        : "text-gray-800 hover:bg-gray-200"
-                    }`}
-                  >
-                    <LuFileSpreadsheet className="text-lg" />
-                    PDF
-                  </button>
-                </li>
-              </ul>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
+    <DashboardLayout activeMenu="Manage Tasks">
+      <div className="my-5">
+        <div className="flex flex-col gap-4">
+          {/* Header Section */}
 
-    <div className="flex flex-col lg:flex-row lg:items-center justify-between mt-4">
-      <div className="flex flex-col gap-3">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex gap-2">
-            <input
-              type="text"
-              placeholder=" Search..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="px-2 py-1 border rounded-md"
-            />
-            <div className="relative">
+
+
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl md:text-xl font-medium">My Tasks</h2>
+            <div className="relative mr-5">
               <button
-                onClick={() => setIsSortPopupOpen((prev) => !prev)}
-                className={`px-2 py-4 text-xs border rounded-md ${
-                  isDarkMode
-                    ? "hover:bg-gray-700 text-gray-200"
-                    : "hover:bg-gray-100 text-gray-800"
+                onClick={() => setIsDownloadPopupOpen((prev) => !prev)}
+                className={`px-2 py-1 text-xs border rounded-md ${
+                  isDarkMode ? "hover:bg-gray-700 text-gray-200" : "hover:bg-gray-100 text-gray-800"
                 }`}
               >
-                Sort
+                Download Report
               </button>
-              {isSortPopupOpen && (
+              {isDownloadPopupOpen && (
                 <div
-                  className={`absolute right-0 mt-2 w-64 rounded-md shadow-lg z-10 ${
-                    isDarkMode
-                      ? "bg-gray-800 border border-gray-700"
-                      : "bg-white border border-gray-200"
+                  className={`absolute right-0 mt-2 w-40 rounded-md shadow-lg z-10 ${
+                    isDarkMode ? "bg-gray-800 border border-gray-700" : "bg-white border border-gray-200"
                   }`}
                 >
                   <div className="p-3">
-                    <p
-                      className={`mb-2 font-medium ${
-                        isDarkMode ? "text-gray-200" : "text-gray-800"
-                      }`}
-                    >
-                      Sort Options
-                    </p>
                     <ul className="space-y-1">
-                      {[
-                        "date",
-                        "progress",
-                        "attachments",
-                        "todos",
-                        "dueDateLongest",
-                        "dueDateShortest",
-                      ].map((option) => (
-                        <li key={option}>
-                          <button
-                            onClick={() => handleSortSelection(option)}
-                            className={`w-full text-left px-2 py-1 rounded ${
-                              isDarkMode
-                                ? "text-gray-200 hover:bg-gray-700"
-                                : "text-gray-800 hover:bg-gray-200"
-                            }`}
-                          >
-                            {option === "dueDateLongest"
-                              ? "Due Date Difference (Longest)"
-                              : option === "dueDateShortest"
-                              ? "Due Date Difference (Shortest)"
-                              : option === "mostAssigned"
-                              ? "Most Assigned To"
-                              : option.charAt(0).toUpperCase() + option.slice(1)}
-                          </button>
-                        </li>
-                      ))}
+                      <li>
+                        <button
+                          onClick={() => handleDownloadReport("excel")}
+                          className={`w-full flex items-center gap-2 px-2 py-1 rounded ${
+                            isDarkMode ? "text-gray-200 hover:bg-gray-700" : "text-gray-800 hover:bg-gray-200"
+                          }`}
+                        >
+                          <LuFileSpreadsheet className="text-lg" />
+                          Excel
+                        </button>
+                      </li>
+                      <li>
+                        <button
+                          onClick={() => handleDownloadReport("pdf")}
+                          className={`w-full flex items-center gap-2 px-2 py-1 rounded ${
+                            isDarkMode ? "text-gray-200 hover:bg-gray-700" : "text-gray-800 hover:bg-gray-200"
+                          }`}
+                        >
+                          <LuFileSpreadsheet className="text-lg" />
+                          PDF
+                        </button>
+                      </li>
                     </ul>
                   </div>
                 </div>
               )}
             </div>
           </div>
-        </div>
-        <div className="flex items-center gap-3 mt-3 lg:mt-0">
-          <TaskStatusTabs
-            tabs={[
-              { Label: "All", count: statusSummary.All },
-              { Label: "pending", count: statusSummary.pending },
-              { Label: "inProgress", count: statusSummary.inProgress },
-              { Label: "completed", count: statusSummary.completed },
-            ]}
-            activeTab={filterStatus}
-            setActiveTab={setFilterStatus}
-          />
-        </div>
-      </div>
-    </div>
+
+
+          
+  
+          {/* Search and Filters Section */}
+          <div className="flex flex-col md:flex-row gap-3">
+            <div className="flex flex-1 gap-2">
+              <input
+              type="text"
+              placeholder=" Search.."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="px-2 py-1 border rounded-md max-w-xs"
+            />
+              <div className="relative">
+                <button
+                  onClick={() => setIsSortPopupOpen((prev) => !prev)}
+                  className={`px-2 py-4 text-xs border rounded-md max-w-xs ${
+                    isDarkMode ? "hover:bg-gray-700 text-gray-200" : "hover:bg-gray-100 text-gray-800"
+                  }`}
+                >
+                  Sort
+                </button>
+                {isSortPopupOpen && (
+                  <div
+                    className={`absolute right-0 mt-2 w-64 rounded-md shadow-lg z-10 ${
+                      isDarkMode ? "bg-gray-800 border border-gray-700" : "bg-white border border-gray-200"
+                    }`}
+                  >
+                    <div className="p-3">
+                      <p className={`mb-2 font-medium ${isDarkMode ? "text-gray-200" : "text-gray-800"}`}>
+                        Sort Options
+                      </p>
+                      <ul className="space-y-1">
+                        {[
+                          "mostAssigned",
+                          "date",
+                          "progress",
+                          "attachments",
+                          "todos",
+                          "dueDateLongest",
+                          "dueDateShortest",
+                        ].map((option) => (
+                          <li key={option}>
+                            <button
+                              onClick={() => handleSortSelection(option)}
+                              className={`w-full text-left px-2 py-1 rounded ${
+                                isDarkMode ? "text-gray-200 hover:bg-gray-700" : "text-gray-800 hover:bg-gray-200"
+                              }`}
+                            >
+                              {option === "dueDateLongest"
+                                ? "Due Date Difference (Longest)"
+                                : option === "dueDateShortest"
+                                ? "Due Date Difference (Shortest)"
+                                : option === "mostAssigned"
+                                ? "Most Assigned To"
+                                : option.charAt(0).toUpperCase() + option.slice(1)}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+  
+            <TaskStatusTabs
+              tabs={[
+                { Label: "All", count: statusSummary.All },
+                { Label: "pending", count: statusSummary.pending },
+                { Label: "inProgress", count: statusSummary.inProgress },
+                { Label: "completed", count: statusSummary.completed },
+              ]}
+              activeTab={filterStatus}
+              setActiveTab={setFilterStatus}
+            />
+          </div>
+
 
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
       {loading ? (
@@ -327,6 +315,7 @@ const MyTasks = () => {
           No tasks found matching current filters
         </div>
       )}
+    </div>
     </div>
   </div>
 </DashboardLayout>

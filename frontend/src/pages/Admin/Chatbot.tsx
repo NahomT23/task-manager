@@ -75,6 +75,7 @@ const Chatbot = () => {
     }
   };
 
+
   return (
     <>
       <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end">
@@ -82,6 +83,7 @@ const Chatbot = () => {
           <div className={`mb-4 w-64 sm:w-80 h-96 flex flex-col rounded-lg p-2 shadow-lg border transition-all duration-300 ${
             isDarkMode ? "bg-gray-800 text-gray-200 border-gray-700" : "bg-white text-gray-900 border-gray-300"
           }`}>
+            {/* Header */}
             <div className="flex justify-between items-center mb-2 p-2">
               <h4 className="text-sm font-semibold">Chat with {orgName}'s AI</h4>
               <button onClick={() => setOpen(false)} className="text-lg">
@@ -89,6 +91,7 @@ const Chatbot = () => {
               </button>
             </div>
             
+            {/* Messages container */}
             <div className="flex-1 overflow-y-auto p-1 mb-2 space-y-2">
               {messages.map((msg, i) => (
                 <div key={i} className={`flex ${msg.isBot ? 'flex-row' : 'flex-row-reverse'} gap-2`}>
@@ -98,10 +101,10 @@ const Chatbot = () => {
                       : (isDarkMode ? "bg-blue-900" : "bg-blue-500 text-white")
                   }`}>
 
-                    <div className="prose prose-sm max-w-full break-words text-xs">
-                        <ReactMarkdown>{msg.text}</ReactMarkdown>
+                    <div className="prose prose-sm max-w-none break-words text-xs">
+                      <ReactMarkdown>{msg.text}</ReactMarkdown>
                     </div>
-
+                    {/* Timestamp  */}
                     <div className={`flex items-center justify-between mt-1 text-xs ${
                       msg.isBot ? (isDarkMode ? "text-gray-400" : "text-gray-600") : "text-blue-100"
                     }`}>
@@ -120,6 +123,7 @@ const Chatbot = () => {
                   </div>
                 </div>
               ))}
+              {/* Loading */}
               {loading && (
                 <div className="flex flex-row gap-2">
                   <div className={`p-2 rounded-lg ${isDarkMode ? "bg-gray-700" : "bg-gray-100"}`}>
@@ -130,18 +134,18 @@ const Chatbot = () => {
               <div ref={messagesEndRef} />
             </div>
 
-            <form onSubmit={handleSubmit} className="flex gap-1">
+            <form onSubmit={handleSubmit} className="flex gap-1 flex-nowrap">
               <input
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
                 placeholder="Type your message..."
-                className={`flex-1 p-2 text-sm rounded-lg focus:outline-none ${
+                className={`flex-1 min-w-0 p-2 text-sm rounded-lg focus:outline-none ${
                   isDarkMode ? "bg-gray-700" : "bg-gray-100"
                 }`}
               />
               <button
                 type="submit"
-                className={`p-2 rounded-lg transition-colors duration-200 ${
+                className={`flex-shrink-0 p-2 rounded-lg transition-colors duration-200 ${
                   isDarkMode ? "bg-blue-600 hover:bg-blue-500" : "bg-blue-500 hover:bg-blue-400"
                 } text-white`}
               >
@@ -151,6 +155,7 @@ const Chatbot = () => {
           </div>
         )}
 
+        {/* Chat toggle button */}
         <button
           onClick={() => setOpen(!open)}
           className={`w-12 h-12 rounded-full shadow-lg flex items-center justify-center text-xl transition-all duration-300 border ${
@@ -162,6 +167,7 @@ const Chatbot = () => {
           {open ? <AiOutlineClose /> : <AiOutlineMessage />}
         </button>
 
+        {/* Copied indicator  */}
         {copied && (
           <div className={`fixed bottom-20 right-6 p-2 rounded-lg text-sm ${
             isDarkMode ? "bg-gray-700" : "bg-gray-100"
@@ -173,5 +179,6 @@ const Chatbot = () => {
     </>
   );
 };
+
 
 export default Chatbot;

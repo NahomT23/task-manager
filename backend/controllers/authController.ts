@@ -30,6 +30,7 @@ const signup = async (req: Request, res: Response): Promise<void> => {
     // Get the Cloudinary URL from req.file if present
     const profileImageUrl = req.file ? req.file.path : '';
 
+
     // Process invitation code
     let organizationId: mongoose.Types.ObjectId | null = null;
     let assignedRole = 'idle';
