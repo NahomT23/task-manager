@@ -19,18 +19,18 @@ const app = express()
 
 app.set('trust proxy', 1)
 
-app.use(cors({
-    origin: process.env.CLIENT_URL,
-    credentials: true, 
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
-  }))
+// app.use(cors({
+//     origin: process.env.CLIENT_URL,
+//     credentials: true, 
+//     methods: ['GET', 'POST', 'PUT', 'DELETE'],
+//     allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
+//   }))
   
 
-  app.options('*', cors({
-    origin: process.env.CLIENT_URL,
-    credentials: true
-  }));
+//   app.options('*', cors({
+//     origin: process.env.CLIENT_URL,
+//     credentials: true
+//   }));
 
 
 
