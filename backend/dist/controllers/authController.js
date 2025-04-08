@@ -35,10 +35,8 @@ const signup = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         // Hash password
         const salt = yield bcryptjs_1.default.genSalt(10);
         const hashedPassword = yield bcryptjs_1.default.hash(password, salt);
-        // Process profile image
-        const profileImageUrl = req.file
-            ? `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`
-            : '';
+        // Get the Cloudinary URL from req.file if present
+        const profileImageUrl = req.file ? req.file.path : '';
         // Process invitation code
         let organizationId = null;
         let assignedRole = 'idle';
@@ -58,6 +56,7 @@ const signup = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             organizationId = organization._id;
             assignedRole = 'member';
         }
+        // Generate unique pseudo names
         const pseudo_name = yield (0, generate_1.generateUniquePseudo)(User_1.default, 'name', 'pseudo_name');
         const pseudo_email = yield (0, generate_1.generateUniquePseudo)(User_1.default, 'email', 'pseudo_email');
         // Create new user
@@ -99,7 +98,6 @@ const signup = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     }
 });
 exports.signup = signup;
-// SIGN IN 
 const signin = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { email, password } = req.body;
     try {
@@ -133,7 +131,6 @@ const signin = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     }
 });
 exports.signin = signin;
-// GET USER PROFILE 
 const getUserProfile = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     try {
@@ -157,7 +154,6 @@ const getUserProfile = (req, res) => __awaiter(void 0, void 0, void 0, function*
     }
 });
 exports.getUserProfile = getUserProfile;
-// UPDATE USER PROFILE  (only the name, password and profile)
 const updateUserProfile = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     const { name, password } = req.body;
@@ -174,8 +170,9 @@ const updateUserProfile = (req, res) => __awaiter(void 0, void 0, void 0, functi
             const salt = yield bcryptjs_1.default.genSalt(10);
             user.password = yield bcryptjs_1.default.hash(password, salt);
         }
+        // Use Cloudinary URL from req.file, if provided
         if (req.file) {
-            user.profileImageUrl = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
+            user.profileImageUrl = req.file.path;
         }
         yield user.save();
         res.status(200).json({

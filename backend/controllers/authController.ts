@@ -27,10 +27,8 @@ const signup = async (req: Request, res: Response): Promise<void> => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Process profile image
-    const profileImageUrl = req.file
-      ? `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`
-      : '';
+    // Get the Cloudinary URL from req.file if present
+    const profileImageUrl = req.file ? req.file.path : '';
 
     // Process invitation code
     let organizationId: mongoose.Types.ObjectId | null = null;
@@ -56,19 +54,9 @@ const signup = async (req: Request, res: Response): Promise<void> => {
       assignedRole = 'member';
     }
 
- 
-
-    const pseudo_name = await generateUniquePseudo(
-      User,
-      'name',
-      'pseudo_name'
-    );
-
-    const pseudo_email = await generateUniquePseudo(
-      User,
-      'email',
-      'pseudo_email'
-    );
+    // Generate unique pseudo names
+    const pseudo_name = await generateUniquePseudo(User, 'name', 'pseudo_name');
+    const pseudo_email = await generateUniquePseudo(User, 'email', 'pseudo_email');
 
     // Create new user
     const newUser = new User({
@@ -112,7 +100,6 @@ const signup = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
-// SIGN IN 
 const signin = async (req: Request, res: Response): Promise<void> => {
   const { email, password }: { email: string; password: string } = req.body;
 
@@ -149,7 +136,6 @@ const signin = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
-// GET USER PROFILE 
 const getUserProfile = async (req: Request, res: Response): Promise<void> => {
   try {
     const user = await User.findById(req.user?.id).select('-password');
@@ -172,7 +158,6 @@ const getUserProfile = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
-// UPDATE USER PROFILE  (only the name, password and profile)
 const updateUserProfile = async (req: Request, res: Response): Promise<void> => {
   const { name, password } = req.body;
 
@@ -183,26 +168,24 @@ const updateUserProfile = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
-
     if (name) {
       user.name = name;
     }
-
 
     if (password) {
       const salt = await bcrypt.genSalt(10);
       user.password = await bcrypt.hash(password, salt);
     }
 
+    // Use Cloudinary URL from req.file, if provided
     if (req.file) {
-      user.profileImageUrl = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
+      user.profileImageUrl = req.file.path;
     }
 
     await user.save();
 
     res.status(200).json({
       message: 'Profile updated successfully',
-
       user: {
         id: user._id,
         name: user.name,
@@ -217,5 +200,6 @@ const updateUserProfile = async (req: Request, res: Response): Promise<void> => 
     res.status(500).json({ message: 'Server error' });
   }
 };
+
 
 export { signup, signin, getUserProfile, updateUserProfile };

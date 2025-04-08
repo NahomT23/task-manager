@@ -4,15 +4,17 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const multer_1 = __importDefault(require("multer"));
-const storage = multer_1.default.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, 'uploads/');
-    },
-    filename: (req, file, cb) => {
-        cb(null, `${Date.now()}-${file.originalname}`);
+const multer_storage_cloudinary_1 = require("multer-storage-cloudinary");
+const cloudinary_1 = __importDefault(require("../config/cloudinary"));
+const storage = new multer_storage_cloudinary_1.CloudinaryStorage({
+    cloudinary: cloudinary_1.default,
+    params: {
+        folder: 'uploads',
+        allowed_formats: ['jpg', 'jpeg', 'png'],
+        public_id: (_req, file) => `${Date.now()}-${file.originalname}`,
     },
 });
-const fileFilter = (req, file, cb) => {
+const fileFilter = (_req, file, cb) => {
     const allowedTypes = ['image/jpg', 'image/png', 'image/jpeg'];
     if (allowedTypes.includes(file.mimetype)) {
         cb(null, true);
@@ -27,6 +29,6 @@ const upload = (0, multer_1.default)({
     limits: {
         fileSize: 5 * 1024 * 1024,
         files: 1
-    }
+    },
 });
 exports.default = upload;
