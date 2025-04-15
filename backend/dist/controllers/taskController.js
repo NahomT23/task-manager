@@ -18,6 +18,7 @@ const User_1 = __importDefault(require("../models/User"));
 const emailTemplate_1 = require("../templates/emailTemplate");
 const mailer_1 = require("../config/mailer");
 const dotenv_1 = require("dotenv");
+const upstashRedis_1 = __importDefault(require("../config/upstashRedis"));
 (0, dotenv_1.configDotenv)();
 // Returns a summary of tasks for the organization (for admin dashboard)
 const getDashboardData = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -28,41 +29,47 @@ const getDashboardData = (req, res) => __awaiter(void 0, void 0, void 0, functio
             res.status(400).json({ message: "Organization not found." });
             return;
         }
-        // Count all tasks within the organization
-        const allCount = yield Task_1.default.countDocuments({ organization: organizationId });
-        // Count tasks by status within the organization
-        const pendingCount = yield Task_1.default.countDocuments({ organization: organizationId, status: 'pending' });
-        const inProgressCount = yield Task_1.default.countDocuments({ organization: organizationId, status: 'inProgress' });
-        const completedCount = yield Task_1.default.countDocuments({ organization: organizationId, status: 'completed' });
-        // Count tasks by priority within the organization
-        const lowCount = yield Task_1.default.countDocuments({ organization: organizationId, priority: 'low' });
-        const mediumCount = yield Task_1.default.countDocuments({ organization: organizationId, priority: 'medium' });
-        const highCount = yield Task_1.default.countDocuments({ organization: organizationId, priority: 'high' });
-        // Retrieve the 5 most recent tasks within the organization
+        const cacheKey = `adminData:${organizationId}`;
+        const cachedData = yield upstashRedis_1.default.get(cacheKey);
+        if (cachedData) {
+            console.log("✅ Redis HIT ON ADMIN DASHBOARD DATA - data found in cache");
+            res.status(200).json(Object.assign({ message: "Dashboard data retrieved from cache" }, cachedData));
+            return;
+        }
+        const [allCount, pendingCount, inProgressCount, completedCount] = yield Promise.all([
+            Task_1.default.countDocuments({ organization: organizationId }),
+            Task_1.default.countDocuments({ organization: organizationId, status: "pending" }),
+            Task_1.default.countDocuments({ organization: organizationId, status: "inProgress" }),
+            Task_1.default.countDocuments({ organization: organizationId, status: "completed" }),
+        ]);
+        const [lowCount, mediumCount, highCount] = yield Promise.all([
+            Task_1.default.countDocuments({ organization: organizationId, priority: "low" }),
+            Task_1.default.countDocuments({ organization: organizationId, priority: "medium" }),
+            Task_1.default.countDocuments({ organization: organizationId, priority: "high" }),
+        ]);
         const recentTasks = yield Task_1.default.find({ organization: organizationId })
             .sort({ createdAt: -1 })
             .limit(5)
-            .select('_id title status priority createdAt');
-        res.status(200).json({
-            charts: {
-                taskDistribution: {
-                    All: allCount,
-                    Pending: pendingCount,
-                    InProgress: inProgressCount,
-                    Completed: completedCount,
-                },
-                taskPriorityLevels: {
-                    Low: lowCount,
-                    Medium: mediumCount,
-                    High: highCount,
-                },
+            .select("_id title status priority createdAt");
+        const charts = {
+            taskDistribution: {
+                All: allCount,
+                Pending: pendingCount,
+                InProgress: inProgressCount,
+                Completed: completedCount,
             },
-            recentTasks,
-        });
+            taskPriorityLevels: {
+                Low: lowCount,
+                Medium: mediumCount,
+                High: highCount,
+            },
+        };
+        yield upstashRedis_1.default.set(cacheKey, { charts, recentTasks }, { ex: 3600 });
+        res.status(200).json({ charts, recentTasks });
     }
     catch (error) {
-        console.error('Error in getDashboardData:', error);
-        res.status(500).json({ message: 'Server error.' });
+        console.error("Error in getDashboardData:", error);
+        res.status(500).json({ message: "Server error." });
     }
 });
 exports.getDashboardData = getDashboardData;
@@ -70,37 +77,48 @@ exports.getDashboardData = getDashboardData;
 const getUserDashboardData = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const userId = req.user._id;
-        // Count all tasks assigned to the user
-        const allCount = yield Task_1.default.countDocuments({ assignedTo: userId });
+        const cacheKey = `memberData:${userId}`;
+        const cachedData = yield upstashRedis_1.default.get(cacheKey);
+        if (cachedData) {
+            console.log("✅ Redis HIT ON MEMBER DASHBOARD DATA - data found in cache");
+            res.status(200).json(Object.assign({ message: "Dashboard data retrieved from cache" }, cachedData));
+            return;
+        }
+        console.log("❌ Redis MISS ON MEMBER DASHBOARD DATA - computing fresh");
         // Count tasks by status
-        const pendingCount = yield Task_1.default.countDocuments({ assignedTo: userId, status: 'pending' });
-        const inProgressCount = yield Task_1.default.countDocuments({ assignedTo: userId, status: 'inProgress' });
-        const completedCount = yield Task_1.default.countDocuments({ assignedTo: userId, status: 'completed' });
+        const [allCount, pendingCount, inProgressCount, completedCount] = yield Promise.all([
+            Task_1.default.countDocuments({ assignedTo: userId }),
+            Task_1.default.countDocuments({ assignedTo: userId, status: 'pending' }),
+            Task_1.default.countDocuments({ assignedTo: userId, status: 'inProgress' }),
+            Task_1.default.countDocuments({ assignedTo: userId, status: 'completed' }),
+        ]);
         // Count tasks by priority
-        const lowCount = yield Task_1.default.countDocuments({ assignedTo: userId, priority: 'low' });
-        const mediumCount = yield Task_1.default.countDocuments({ assignedTo: userId, priority: 'medium' });
-        const highCount = yield Task_1.default.countDocuments({ assignedTo: userId, priority: 'high' });
-        // Retrieve recent tasks assigned to the user
+        const [lowCount, mediumCount, highCount] = yield Promise.all([
+            Task_1.default.countDocuments({ assignedTo: userId, priority: 'low' }),
+            Task_1.default.countDocuments({ assignedTo: userId, priority: 'medium' }),
+            Task_1.default.countDocuments({ assignedTo: userId, priority: 'high' }),
+        ]);
+        // Recent tasks
         const recentTasks = yield Task_1.default.find({ assignedTo: userId })
             .sort({ createdAt: -1 })
             .limit(5)
             .select('_id title status priority createdAt');
-        res.status(200).json({
-            charts: {
-                taskDistribution: {
-                    All: allCount,
-                    Pending: pendingCount,
-                    InProgress: inProgressCount,
-                    Completed: completedCount,
-                },
-                taskPriorityLevels: {
-                    Low: lowCount,
-                    Medium: mediumCount,
-                    High: highCount,
-                },
+        const charts = {
+            taskDistribution: {
+                All: allCount,
+                Pending: pendingCount,
+                InProgress: inProgressCount,
+                Completed: completedCount,
             },
-            recentTasks,
-        });
+            taskPriorityLevels: {
+                Low: lowCount,
+                Medium: mediumCount,
+                High: highCount,
+            },
+        };
+        yield upstashRedis_1.default.set(cacheKey, { charts, recentTasks }, { ex: 3600 });
+        res.status(200).json({ charts, recentTasks });
+        return;
     }
     catch (error) {
         console.error('Error in getUserDashboardData:', error);
@@ -108,8 +126,7 @@ const getUserDashboardData = (req, res) => __awaiter(void 0, void 0, void 0, fun
     }
 });
 exports.getUserDashboardData = getUserDashboardData;
-// Returns all tasks for the user's organization.
-// Admins and members see tasks for their organization.
+// Admins get all the tasks in his organization.
 const getTasks = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b, _c, _d;
     try {
@@ -117,6 +134,13 @@ const getTasks = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         const { status } = req.query;
         if (!organizationId) {
             res.status(400).json({ message: "Organization not found." });
+            return;
+        }
+        const cacheKey = `allTaskData:${organizationId}`;
+        const cachedData = yield upstashRedis_1.default.get(cacheKey);
+        if (cachedData) {
+            console.log("✅ Redis HIT ON TASKS - data found in cache");
+            res.status(200).json(Object.assign({ message: "Task data retrieved from cache" }, cachedData));
             return;
         }
         const filter = { organization: organizationId };
@@ -146,6 +170,7 @@ const getTasks = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             inProgress: ((_c = summary.inProgress[0]) === null || _c === void 0 ? void 0 : _c.count) || 0,
             completed: ((_d = summary.completed[0]) === null || _d === void 0 ? void 0 : _d.count) || 0
         };
+        yield upstashRedis_1.default.set(cacheKey, { tasks, statusSummary: statusCounts }, { ex: 3600 });
         res.status(200).json({
             tasks,
             statusSummary: statusCounts
@@ -166,6 +191,13 @@ const getMyTasks = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         if (status && status !== "All") {
             filter.status = status;
         }
+        const cacheKey = `myTasks:${userId}:${status || "All"}`;
+        const cachedData = yield upstashRedis_1.default.get(cacheKey);
+        if (cachedData) {
+            console.log("✅ Redis HIT ON MY TASKS - data found in cache");
+            res.status(200).json(Object.assign({ message: "My Task data retrieved from cache" }, cachedData));
+            return;
+        }
         // Fetch all tasks assigned to the user
         const tasks = yield Task_1.default.find(filter).populate("assignedTo createdBy", "-password");
         // Optionally, build a status summary if needed
@@ -175,6 +207,7 @@ const getMyTasks = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
             inProgress: tasks.filter(task => task.status === "inProgress").length,
             completed: tasks.filter(task => task.status === "completed").length,
         };
+        yield upstashRedis_1.default.set(cacheKey, { tasks, statusSummary }, { ex: 3600 });
         res.status(200).json({ tasks, statusSummary });
     }
     catch (error) {
@@ -191,10 +224,22 @@ const getTasksById = (req, res) => __awaiter(void 0, void 0, void 0, function* (
         const task = yield Task_1.default.findOne({ _id: id, organization: organizationId })
             .populate("assignedTo createdBy", "-password")
             .populate("attachments");
+        const cacheKey = `task:${organizationId}:${id}`;
+        const cachedData = yield upstashRedis_1.default.get(cacheKey);
+        if (cachedData) {
+            console.log("✅ Redis HIT ON SINGLE TASKS - data found in cache");
+            res.status(200).json({
+                message: "Single Task data retrieved from cache",
+                task: cachedData.task,
+            });
+            return;
+        }
+        console.log("❌ Redis MISS ON SINGLE TASK - fetching from DB");
         if (!task) {
             res.status(404).json({ message: "Task not found." });
             return;
         }
+        yield upstashRedis_1.default.set(cacheKey, { task }, { ex: 3600 });
         res.status(200).json({ task });
     }
     catch (error) {
@@ -203,76 +248,6 @@ const getTasksById = (req, res) => __awaiter(void 0, void 0, void 0, function* (
     }
 });
 exports.getTasksById = getTasksById;
-// // Creates a new task (admin only)
-// export const createTask = async (req: Request, res: Response) => {
-//   try {
-//     const {
-//       title,
-//       description,
-//       priority,
-//       status,
-//       dueDate,
-//       assignedTo,
-//       attachments,
-//       todoChecklist,
-//       progress,
-//     } = req.body;
-//     const organization = req.user!.organization;
-//     if (!organization) {
-//       res.status(400).json({ message: "Organization not found." });
-//       return;
-//     }
-//     const assignedArray = Array.isArray(assignedTo) ? 
-//     assignedTo : 
-//     [assignedTo].filter(Boolean);
-//     const newTask = new Task({
-//       title,
-//       description,
-//       priority,
-//       status: "pending",
-//       dueDate,
-//       assignedTo: assignedArray,
-//       createdBy: req.user!._id,
-//       attachments,
-//       todoChecklist,
-//       progress,
-//       organization,
-//     });
-//     const savedTask = await newTask.save();
-//         // Send assignment emails
-//         const assignedUsers = await User.find({ _id: { $in: assignedArray } });
-//         const adminEmail = process.env.ADMIN_EMAIL;
-//         assignedUsers.forEach(async (user) => {
-//           const emailHtml = `
-//             <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #ddd;">
-//               <h2 style="color: #2c3e50;">New Task Assignment</h2>
-//               <p>Hello ${user.name},</p>
-//               <p>You've been assigned a new task:</p>
-//               <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
-//                 <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Title:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${title}</td></tr>
-//                 <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Description:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${description}</td></tr>
-//                 <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Due Date:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${dueDate}</td></tr>
-//                 <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Priority:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${priority}</td></tr>
-//               </table>
-//               <p style="color: #3498db;">View Task: <a href="${process.env.FRONTEND_URL}/task/${savedTask._id}">Task Details</a></p>
-//             </div>
-//           `;
-//           try {
-//             await sendEmail({
-//               to: user.email,
-//               subject: `New Task Assigned: ${title}`,
-//               html: emailHtml
-//             });
-//           } catch (emailError) {
-//             console.error('Email send failed:', emailError);
-//           }
-//         });
-//     res.status(201).json({ task: savedTask });
-//   } catch (error) {
-//     console.error("Error in createTask:", error);
-//     res.status(500).json({ message: "Server error." });
-//   }
-// };
 const createTask = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { title, description, priority, status, dueDate, assignedTo, attachments, todoChecklist, progress, } = req.body;
@@ -313,6 +288,12 @@ const createTask = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
                 console.error('Email send failed:', emailError);
             }
         }));
+        yield Promise.all([
+            upstashRedis_1.default.del(`task:${organization}`),
+            upstashRedis_1.default.del(`adminData:${organization}`),
+            upstashRedis_1.default.del(`allTaskData:${organization}`),
+            ...assignedArray.map(uid => upstashRedis_1.default.del(`myTasks:${uid}:All`))
+        ]);
         res.status(201).json({ task: savedTask });
     }
     catch (error) {
@@ -364,6 +345,14 @@ const updateTaskCheckList = (req, res) => __awaiter(void 0, void 0, void 0, func
                 }
             }));
         }
+        const statusVariants = ["All", "pending", "inProgress", "completed"];
+        yield Promise.all([
+            upstashRedis_1.default.del(`task:${organizationId}`),
+            upstashRedis_1.default.del(`task:${organizationId}:${id}`),
+            upstashRedis_1.default.del(`adminData:${organizationId}`),
+            upstashRedis_1.default.del(`allTaskData:${organizationId}`),
+            ...(task.assignedTo || []).flatMap(uid => statusVariants.map(status => upstashRedis_1.default.del(`myTasks:${uid.toString()}:${status}`)))
+        ]);
         res.status(200).json({ task });
     }
     catch (error) {
@@ -384,6 +373,13 @@ const updateTask = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         }
         const updates = req.body;
         const updatedTask = yield Task_1.default.findByIdAndUpdate(id, updates, { new: true });
+        yield Promise.all([
+            upstashRedis_1.default.del(`task:${organizationId}`),
+            upstashRedis_1.default.del(`task:${organizationId}:${id}`),
+            upstashRedis_1.default.del(`adminData:${organizationId}`),
+            upstashRedis_1.default.del(`allTaskData:${organizationId}`),
+            ...((task === null || task === void 0 ? void 0 : task.assignedTo) || []).map(uid => upstashRedis_1.default.del(`myTasks:${uid.toString()}:All`))
+        ]);
         res.status(200).json({ task: updatedTask });
     }
     catch (error) {
@@ -403,6 +399,15 @@ const deleteTask = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
             return;
         }
         yield task.deleteOne();
+        const statusVariants = ["All", "pending", "inProgress", "completed"];
+        const assignedUserIds = (task.assignedTo || []).map(user => user.toString());
+        yield Promise.all([
+            upstashRedis_1.default.del(`task:${organizationId}`),
+            upstashRedis_1.default.del(`task:${organizationId}:${id}`),
+            upstashRedis_1.default.del(`adminData:${organizationId}`),
+            upstashRedis_1.default.del(`allTaskData:${organizationId}`),
+            ...assignedUserIds.flatMap(uid => statusVariants.map(status => upstashRedis_1.default.del(`myTasks:${uid}:${status}`)))
+        ]);
         res.status(200).json({ message: "Task deleted successfully." });
     }
     catch (error) {
@@ -427,6 +432,15 @@ const updateTaskStatus = (req, res) => __awaiter(void 0, void 0, void 0, functio
             res.status(404).json({ message: "Task not found." });
             return;
         }
+        const statusVariants = ["All", "pending", "inProgress", "completed"];
+        const assignedUserIds = (task.assignedTo || []).map(user => user.toString());
+        yield Promise.all([
+            upstashRedis_1.default.del(`task:${organizationId}`),
+            upstashRedis_1.default.del(`task:${organizationId}:${id}`),
+            upstashRedis_1.default.del(`adminData:${organizationId}`),
+            upstashRedis_1.default.del(`allTaskData:${organizationId}`),
+            ...assignedUserIds.flatMap(uid => statusVariants.map(status => upstashRedis_1.default.del(`myTasks:${uid}:${status}`)))
+        ]);
         res.status(200).json({ task });
     }
     catch (error) {

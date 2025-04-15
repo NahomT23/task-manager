@@ -4,9 +4,8 @@ import User from "../models/User";
 import { taskAssignedTemplate, taskCompletedTemplate } from "../templates/emailTemplate";
 import { sendEmail } from "../config/mailer";
 import { configDotenv } from "dotenv";
-
+import redisClient from '../config/upstashRedis'
 configDotenv();
-
 
 // Returns a summary of tasks for the organization (for admin dashboard)
 export const getDashboardData = async (req: Request, res: Response) => {
@@ -17,105 +16,150 @@ export const getDashboardData = async (req: Request, res: Response) => {
       return;
     }
 
-    // Count all tasks within the organization
-    const allCount = await Task.countDocuments({ organization: organizationId });
+    const cacheKey = `adminData:${organizationId}`;
+    const cachedData = await redisClient.get(cacheKey);
 
-    // Count tasks by status within the organization
-    const pendingCount = await Task.countDocuments({ organization: organizationId, status: 'pending' });
-    const inProgressCount = await Task.countDocuments({ organization: organizationId, status: 'inProgress' });
-    const completedCount = await Task.countDocuments({ organization: organizationId, status: 'completed' });
+    if (cachedData) {
+      console.log("✅ Redis HIT ON ADMIN DASHBOARD DATA - data found in cache");
+      res.status(200).json({
+        message: "Dashboard data retrieved from cache",
+        ...cachedData,
+      });
+      return;
+    }
 
-    // Count tasks by priority within the organization
-    const lowCount = await Task.countDocuments({ organization: organizationId, priority: 'low' });
-    const mediumCount = await Task.countDocuments({ organization: organizationId, priority: 'medium' });
-    const highCount = await Task.countDocuments({ organization: organizationId, priority: 'high' });
 
-    // Retrieve the 5 most recent tasks within the organization
+    const [allCount, pendingCount, inProgressCount, completedCount] = await Promise.all([
+      Task.countDocuments({ organization: organizationId }),
+      Task.countDocuments({ organization: organizationId, status: "pending" }),
+      Task.countDocuments({ organization: organizationId, status: "inProgress" }),
+      Task.countDocuments({ organization: organizationId, status: "completed" }),
+    ]);
+
+    const [lowCount, mediumCount, highCount] = await Promise.all([
+      Task.countDocuments({ organization: organizationId, priority: "low" }),
+      Task.countDocuments({ organization: organizationId, priority: "medium" }),
+      Task.countDocuments({ organization: organizationId, priority: "high" }),
+    ]);
+
     const recentTasks = await Task.find({ organization: organizationId })
       .sort({ createdAt: -1 })
       .limit(5)
-      .select('_id title status priority createdAt');
+      .select("_id title status priority createdAt");
 
-    res.status(200).json({
-      charts: {
-        taskDistribution: {
-          All: allCount,
-          Pending: pendingCount,
-          InProgress: inProgressCount,
-          Completed: completedCount,
-        },
-        taskPriorityLevels: {
-          Low: lowCount,
-          Medium: mediumCount,
-          High: highCount,
-        },
+    const charts = {
+      taskDistribution: {
+        All: allCount,
+        Pending: pendingCount,
+        InProgress: inProgressCount,
+        Completed: completedCount,
       },
-      recentTasks,
-    });
+      taskPriorityLevels: {
+        Low: lowCount,
+        Medium: mediumCount,
+        High: highCount,
+      },
+    };
+
+    await redisClient.set(cacheKey, { charts, recentTasks }, { ex: 3600 });
+
+    res.status(200).json({ charts, recentTasks });
   } catch (error) {
-    console.error('Error in getDashboardData:', error);
-    res.status(500).json({ message: 'Server error.' });
+    console.error("Error in getDashboardData:", error);
+    res.status(500).json({ message: "Server error." });
   }
 };
-
 
 // Returns tasks assigned to the logged-in user
 export const getUserDashboardData = async (req: Request, res: Response) => {
   try {
     const userId = req.user!._id;
 
-    // Count all tasks assigned to the user
-    const allCount = await Task.countDocuments({ assignedTo: userId });
+    const cacheKey = `memberData:${userId}`;
+    const cachedData = await redisClient.get(cacheKey);
+
+    if (cachedData) {
+      console.log("✅ Redis HIT ON MEMBER DASHBOARD DATA - data found in cache");
+      res.status(200).json({
+        message: "Dashboard data retrieved from cache",
+        ...cachedData,
+      });
+      return;
+    }
+
+    console.log("❌ Redis MISS ON MEMBER DASHBOARD DATA - computing fresh");
 
     // Count tasks by status
-    const pendingCount = await Task.countDocuments({ assignedTo: userId, status: 'pending' });
-    const inProgressCount = await Task.countDocuments({ assignedTo: userId, status: 'inProgress' });
-    const completedCount = await Task.countDocuments({ assignedTo: userId, status: 'completed' });
+    const [allCount, pendingCount, inProgressCount, completedCount] = await Promise.all([
+      Task.countDocuments({ assignedTo: userId }),
+      Task.countDocuments({ assignedTo: userId, status: 'pending' }),
+      Task.countDocuments({ assignedTo: userId, status: 'inProgress' }),
+      Task.countDocuments({ assignedTo: userId, status: 'completed' }),
+    ]);
 
     // Count tasks by priority
-    const lowCount = await Task.countDocuments({ assignedTo: userId, priority: 'low' });
-    const mediumCount = await Task.countDocuments({ assignedTo: userId, priority: 'medium' });
-    const highCount = await Task.countDocuments({ assignedTo: userId, priority: 'high' });
+    const [lowCount, mediumCount, highCount] = await Promise.all([
+      Task.countDocuments({ assignedTo: userId, priority: 'low' }),
+      Task.countDocuments({ assignedTo: userId, priority: 'medium' }),
+      Task.countDocuments({ assignedTo: userId, priority: 'high' }),
+    ]);
 
-    // Retrieve recent tasks assigned to the user
+    // Recent tasks
     const recentTasks = await Task.find({ assignedTo: userId })
       .sort({ createdAt: -1 })
       .limit(5)
       .select('_id title status priority createdAt');
 
-    res.status(200).json({
-      charts: {
-        taskDistribution: {
-          All: allCount,
-          Pending: pendingCount,
-          InProgress: inProgressCount,
-          Completed: completedCount,
-        },
-        taskPriorityLevels: {
-          Low: lowCount,
-          Medium: mediumCount,
-          High: highCount,
-        },
+    const charts = {
+      taskDistribution: {
+        All: allCount,
+        Pending: pendingCount,
+        InProgress: inProgressCount,
+        Completed: completedCount,
       },
-      recentTasks,
-    });
+      taskPriorityLevels: {
+        Low: lowCount,
+        Medium: mediumCount,
+        High: highCount,
+      },
+    };
+
+
+    await redisClient.set(cacheKey, { charts, recentTasks }, { ex: 3600 });
+
+    res.status(200).json({ charts, recentTasks });
+    return;
   } catch (error) {
     console.error('Error in getUserDashboardData:', error);
     res.status(500).json({ message: 'Server error.' });
   }
 };
 
-// Returns all tasks for the user's organization.
-// Admins and members see tasks for their organization.
+// Admins get all the tasks in his organization.
 export const getTasks = async (req: Request, res: Response) => {
   try {
     const organizationId = req.user!.organization;
     const { status } = req.query;
 
+
     if (!organizationId) {
       res.status(400).json({ message: "Organization not found." });
       return;
     }
+
+    const cacheKey = `allTaskData:${organizationId}`
+    
+    const cachedData = await redisClient.get(cacheKey)
+
+    if (cachedData) {
+      console.log("✅ Redis HIT ON TASKS - data found in cache");
+      res.status(200).json({
+        message: "Task data retrieved from cache",
+        ...cachedData,
+      });
+      return;
+    }
+
 
     const filter: any = { organization: organizationId };
     
@@ -148,6 +192,8 @@ export const getTasks = async (req: Request, res: Response) => {
       completed: summary.completed[0]?.count || 0
     };
 
+    await redisClient.set(cacheKey, { tasks, statusSummary: statusCounts }, { ex: 3600 } )
+
     res.status(200).json({ 
       tasks,
       statusSummary: statusCounts
@@ -170,6 +216,22 @@ export const getMyTasks = async (req: Request, res: Response) => {
       filter.status = status;
     }
 
+
+    const cacheKey = `myTasks:${userId}:${status || "All"}`
+    
+    const cachedData = await redisClient.get(cacheKey)
+
+    if (cachedData) {
+      console.log("✅ Redis HIT ON MY TASKS - data found in cache");
+      res.status(200).json({
+        message: "My Task data retrieved from cache",
+        ...cachedData,
+      });
+      return;
+    }
+
+    
+
     // Fetch all tasks assigned to the user
     const tasks = await Task.find(filter).populate("assignedTo createdBy", "-password");
 
@@ -180,6 +242,10 @@ export const getMyTasks = async (req: Request, res: Response) => {
       inProgress: tasks.filter(task => task.status === "inProgress").length,
       completed: tasks.filter(task => task.status === "completed").length,
     };
+
+
+
+    await redisClient.set(cacheKey, { tasks, statusSummary }, { ex: 3600 })
 
     res.status(200).json({ tasks, statusSummary });
   } catch (error) {
@@ -196,102 +262,34 @@ export const getTasksById = async (req: Request, res: Response) => {
     const task = await Task.findOne({ _id: id, organization: organizationId })
       .populate("assignedTo createdBy", "-password")
       .populate("attachments");
+
+      const cacheKey = `task:${organizationId}:${id}`;
+
+      const cachedData = await redisClient.get<{ task: any }>(cacheKey);
+      if (cachedData) {
+        console.log("✅ Redis HIT ON SINGLE TASKS - data found in cache");
+        res.status(200).json({
+          message: "Single Task data retrieved from cache",
+          task: cachedData.task,
+        });
+        return;
+      }
+
+      console.log("❌ Redis MISS ON SINGLE TASK - fetching from DB");
       
     if (!task) {
       res.status(404).json({ message: "Task not found." });
       return;
     }
+
+    await redisClient.set(cacheKey, { task }, { ex: 3600 })
+
     res.status(200).json({ task });
   } catch (error) {
     console.error("Error in getTasksById:", error);
     res.status(500).json({ message: "Server error." });
   }
 };
-
-// // Creates a new task (admin only)
-// export const createTask = async (req: Request, res: Response) => {
-//   try {
-
-//     const {
-//       title,
-//       description,
-//       priority,
-//       status,
-//       dueDate,
-//       assignedTo,
-//       attachments,
-//       todoChecklist,
-//       progress,
-//     } = req.body;
-
-
-//     const organization = req.user!.organization;
-//     if (!organization) {
-//       res.status(400).json({ message: "Organization not found." });
-//       return;
-//     }
-
-//     const assignedArray = Array.isArray(assignedTo) ? 
-//     assignedTo : 
-//     [assignedTo].filter(Boolean);
-
-
-
-//     const newTask = new Task({
-//       title,
-//       description,
-//       priority,
-//       status: "pending",
-//       dueDate,
-//       assignedTo: assignedArray,
-//       createdBy: req.user!._id,
-//       attachments,
-//       todoChecklist,
-//       progress,
-//       organization,
-//     });
-
-//     const savedTask = await newTask.save();
-
-
-
-//         // Send assignment emails
-//         const assignedUsers = await User.find({ _id: { $in: assignedArray } });
-//         const adminEmail = process.env.ADMIN_EMAIL;
-    
-//         assignedUsers.forEach(async (user) => {
-//           const emailHtml = `
-//             <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #ddd;">
-//               <h2 style="color: #2c3e50;">New Task Assignment</h2>
-//               <p>Hello ${user.name},</p>
-//               <p>You've been assigned a new task:</p>
-//               <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
-//                 <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Title:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${title}</td></tr>
-//                 <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Description:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${description}</td></tr>
-//                 <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Due Date:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${dueDate}</td></tr>
-//                 <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Priority:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${priority}</td></tr>
-//               </table>
-//               <p style="color: #3498db;">View Task: <a href="${process.env.FRONTEND_URL}/task/${savedTask._id}">Task Details</a></p>
-//             </div>
-//           `;
-    
-//           try {
-//             await sendEmail({
-//               to: user.email,
-//               subject: `New Task Assigned: ${title}`,
-//               html: emailHtml
-//             });
-//           } catch (emailError) {
-//             console.error('Email send failed:', emailError);
-//           }
-//         });
-
-//     res.status(201).json({ task: savedTask });
-//   } catch (error) {
-//     console.error("Error in createTask:", error);
-//     res.status(500).json({ message: "Server error." });
-//   }
-// };
 
 export const createTask = async (req: Request, res: Response) => {
   try {
@@ -349,6 +347,14 @@ export const createTask = async (req: Request, res: Response) => {
         console.error('Email send failed:', emailError);
       }
     });
+
+    await Promise.all([
+      redisClient.del(`task:${organization}`),
+      redisClient.del(`adminData:${organization}`),
+      redisClient.del(`allTaskData:${organization}`),
+      ...assignedArray.map(uid => redisClient.del(`myTasks:${uid}:All`))
+    ]);
+    
 
     res.status(201).json({ task: savedTask });
   } catch (error) {
@@ -411,6 +417,19 @@ export const updateTaskCheckList = async (req: Request, res: Response) => {
       });
     }
 
+    const statusVariants = ["All", "pending", "inProgress", "completed"];
+    await Promise.all([
+      redisClient.del(`task:${organizationId}`),
+      redisClient.del(`task:${organizationId}:${id}`),
+      redisClient.del(`adminData:${organizationId}`),
+      redisClient.del(`allTaskData:${organizationId}`),
+      ...(task.assignedTo || []).flatMap(uid =>
+        statusVariants.map(status => redisClient.del(`myTasks:${uid.toString()}:${status}`))
+      )
+    ]);
+    
+    
+
     res.status(200).json({ task });
   } catch (error) {
     console.error("Error in updateTaskCheckList:", error);
@@ -432,6 +451,19 @@ export const updateTask = async (req: Request, res: Response) => {
     
     const updates = req.body;
     const updatedTask = await Task.findByIdAndUpdate(id, updates, { new: true });
+
+    await Promise.all([
+      redisClient.del(`task:${organizationId}`),
+      redisClient.del(`task:${organizationId}:${id}`),
+      redisClient.del(`adminData:${organizationId}`),
+      redisClient.del(`allTaskData:${organizationId}`),
+      ...(task?.assignedTo || []).map(uid =>
+        redisClient.del(`myTasks:${uid.toString()}:All`)
+      )
+    ]);
+    
+
+
     res.status(200).json({ task: updatedTask });
   } catch (error) {
     console.error("Error in updateTask:", error);
@@ -452,6 +484,21 @@ export const deleteTask = async (req: Request, res: Response) => {
     }
 
     await task.deleteOne();
+
+    const statusVariants = ["All", "pending", "inProgress", "completed"];
+    const assignedUserIds = (task.assignedTo || []).map(user => user.toString());
+
+    await Promise.all([
+      redisClient.del(`task:${organizationId}`),
+      redisClient.del(`task:${organizationId}:${id}`),
+      redisClient.del(`adminData:${organizationId}`),
+      redisClient.del(`allTaskData:${organizationId}`),
+      ...assignedUserIds.flatMap(uid =>
+        statusVariants.map(status => redisClient.del(`myTasks:${uid}:${status}`))
+      )
+    ]);
+    
+
     res.status(200).json({ message: "Task deleted successfully." });
   } catch (error) {
     console.error("Error in deleteTask:", error);
@@ -482,6 +529,19 @@ export const updateTaskStatus = async (req: Request, res: Response) => {
       res.status(404).json({ message: "Task not found." });
       return;
     }
+
+    const statusVariants = ["All", "pending", "inProgress", "completed"];
+    const assignedUserIds = (task.assignedTo || []).map(user => user.toString());
+
+    await Promise.all([
+      redisClient.del(`task:${organizationId}`),
+      redisClient.del(`task:${organizationId}:${id}`),
+      redisClient.del(`adminData:${organizationId}`),
+      redisClient.del(`allTaskData:${organizationId}`),
+      ...assignedUserIds.flatMap(uid =>
+        statusVariants.map(status => redisClient.del(`myTasks:${uid}:${status}`))
+      )
+    ]);
 
     res.status(200).json({ task });
   } catch (error) {
