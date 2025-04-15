@@ -8,14 +8,17 @@ exports.validateInput = validateInput;
 exports.secureContextData = secureContextData;
 const sanitize_html_1 = __importDefault(require("sanitize-html"));
 const replacePseudoWithReal = (responseText, data) => {
-    var _a, _b;
+    if (!data.organization || !data.organization.real_data || !data.organization.pseudo_data) {
+        console.error("Invalid data structure in replacePseudoWithReal:", data);
+        return responseText;
+    }
     const mapping = {};
     // Organization mapping
     const orgPseudo = data.organization.pseudo_data.pseudo_name;
     const orgReal = data.organization.real_data.name;
     mapping[orgPseudo] = orgReal;
     // Admin mapping
-    if (((_a = data.admin) === null || _a === void 0 ? void 0 : _a.pseudo_data) && ((_b = data.admin) === null || _b === void 0 ? void 0 : _b.real_data)) {
+    if (data.admin && data.admin.pseudo_data && data.admin.real_data) {
         const adminPseudo = data.admin.pseudo_data.pseudo_name;
         const adminReal = data.admin.real_data.name;
         const adminEmailPseudo = data.admin.pseudo_data.pseudo_email;

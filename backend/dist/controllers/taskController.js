@@ -324,19 +324,26 @@ const updateTaskCheckList = (req, res) => __awaiter(void 0, void 0, void 0, func
             res.status(404).json({ message: "Task not found." });
             return;
         }
+        // If task is now completed, notify organization admins
         if (newStatus === 'completed') {
-            const task = yield Task_1.default.findById(id).populate('assignedTo');
-            const adminUsers = yield User_1.default.find({
-                organization: task === null || task === void 0 ? void 0 : task.organization,
+            // Use a distinct variable name to avoid shadowing
+            const taskWithAssigned = yield Task_1.default.findById(id).populate('assignedTo');
+            // Get all admins for the task's organization
+            let adminUsers = yield User_1.default.find({
+                organization: taskWithAssigned === null || taskWithAssigned === void 0 ? void 0 : taskWithAssigned.organization,
                 role: 'admin'
             });
-            const userNames = ((_a = task === null || task === void 0 ? void 0 : task.assignedTo) === null || _a === void 0 ? void 0 : _a.filter(user => user !== null).map(user => user.name)) || [];
-            const emailHtml = (0, emailTemplate_1.taskCompletedTemplate)(task, userNames, process.env.FRONTEND_URL || '');
+            // Filter out the email account used for sending emails if it exists in adminUsers
+            adminUsers = adminUsers.filter(admin => admin.email !== process.env.GMAIL_USER);
+            // Extract names from the assigned users list (if any)
+            const userNames = ((_a = taskWithAssigned === null || taskWithAssigned === void 0 ? void 0 : taskWithAssigned.assignedTo) === null || _a === void 0 ? void 0 : _a.filter(user => user !== null).map(user => user.name)) || [];
+            const emailHtml = (0, emailTemplate_1.taskCompletedTemplate)(taskWithAssigned, userNames, process.env.FRONTEND_URL || '');
+            // Correctly use a template literal for the subject line
             adminUsers.forEach((admin) => __awaiter(void 0, void 0, void 0, function* () {
                 try {
                     yield (0, mailer_1.sendEmail)({
                         to: admin.email,
-                        subject: `Task Completed: ${task === null || task === void 0 ? void 0 : task.title}`,
+                        subject: `Task Completed: ${taskWithAssigned === null || taskWithAssigned === void 0 ? void 0 : taskWithAssigned.title}`,
                         html: emailHtml
                     });
                 }
@@ -345,6 +352,7 @@ const updateTaskCheckList = (req, res) => __awaiter(void 0, void 0, void 0, func
                 }
             }));
         }
+        // Invalidate related Redis cache keys
         const statusVariants = ["All", "pending", "inProgress", "completed"];
         yield Promise.all([
             upstashRedis_1.default.del(`task:${organizationId}`),

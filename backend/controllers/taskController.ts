@@ -391,24 +391,37 @@ export const updateTaskCheckList = async (req: Request, res: Response) => {
       return;
     }
 
+    // If task is now completed, notify organization admins
     if (newStatus === 'completed') {
-      const task = await Task.findById(id).populate('assignedTo'); 
-      const adminUsers = await User.find({
-        organization: task?.organization, 
+      // Use a distinct variable name to avoid shadowing
+      const taskWithAssigned = await Task.findById(id).populate('assignedTo'); 
+      
+      // Get all admins for the task's organization
+      let adminUsers = await User.find({
+        organization: taskWithAssigned?.organization, 
         role: 'admin'
       });
-  
-      const userNames = task?.assignedTo?.filter(user => user !== null).map(user => (user as any).name) || [];
+
+      // Filter out the email account used for sending emails if it exists in adminUsers
+      adminUsers = adminUsers.filter(admin => admin.email !== process.env.GMAIL_USER);
+
+      // Extract names from the assigned users list (if any)
+      const userNames = taskWithAssigned?.assignedTo
+        ?.filter(user => user !== null)
+        .map(user => (user as any).name) || [];
       
-      const emailHtml = taskCompletedTemplate(task, userNames, process.env.FRONTEND_URL || '');
+      const emailHtml = taskCompletedTemplate(
+        taskWithAssigned,
+        userNames,
+        process.env.FRONTEND_URL || ''
+      );
 
-
-
+      // Correctly use a template literal for the subject line
       adminUsers.forEach(async (admin) => {
         try {
           await sendEmail({
             to: admin.email,
-            subject: `Task Completed: ${task?.title}`,
+            subject: `Task Completed: ${taskWithAssigned?.title}`,
             html: emailHtml
           });
         } catch (emailError) {
@@ -417,6 +430,7 @@ export const updateTaskCheckList = async (req: Request, res: Response) => {
       });
     }
 
+    // Invalidate related Redis cache keys
     const statusVariants = ["All", "pending", "inProgress", "completed"];
     await Promise.all([
       redisClient.del(`task:${organizationId}`),
@@ -427,8 +441,6 @@ export const updateTaskCheckList = async (req: Request, res: Response) => {
         statusVariants.map(status => redisClient.del(`myTasks:${uid.toString()}:${status}`))
       )
     ]);
-    
-    
 
     res.status(200).json({ task });
   } catch (error) {
@@ -436,6 +448,7 @@ export const updateTaskCheckList = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Server error." });
   }
 };
+
 
 // Updates task details
 export const updateTask = async (req: Request, res: Response) => {

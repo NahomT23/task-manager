@@ -1,8 +1,14 @@
 import sanitizeHtml from 'sanitize-html';
 
 type ReplacementMapping = Record<string, string>;
-
+  
 export const replacePseudoWithReal = (responseText: string, data: any): string => {
+
+  if (!data.organization || !data.organization.real_data || !data.organization.pseudo_data) {
+    console.error("Invalid data structure in replacePseudoWithReal:", data);
+    return responseText;
+  }
+
   const mapping: { [key: string]: string } = {};
 
   // Organization mapping
@@ -11,7 +17,7 @@ export const replacePseudoWithReal = (responseText: string, data: any): string =
   mapping[orgPseudo] = orgReal;
 
   // Admin mapping
-  if (data.admin?.pseudo_data && data.admin?.real_data) {
+  if (data.admin && data.admin.pseudo_data && data.admin.real_data) {
     const adminPseudo = data.admin.pseudo_data.pseudo_name;
     const adminReal = data.admin.real_data.name;
     const adminEmailPseudo = data.admin.pseudo_data.pseudo_email;
@@ -47,7 +53,7 @@ export const replacePseudoWithReal = (responseText: string, data: any): string =
   });
   return finalText;
 }
-  
+
 export const replaceRealWithPseudo = (userMessage: string, data: any): string => {
     const mapping: { [key: string]: string } = {};
   
