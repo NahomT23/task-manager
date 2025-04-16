@@ -1,7 +1,8 @@
 import { Request, Response } from 'express';
-import mongoose from 'mongoose';
 import User from '../models/User';
 import Task from '../models/Task';
+import redis from '../config/upstashRedis';
+
 
 interface IUserPayload {
   _id: string;
@@ -16,6 +17,25 @@ export const getUsers = async (req: Request, res: Response): Promise<void> => {
     const organizationId = userPayload.organization;
 
 
+    const cacheKey = `users:${organizationId}`
+    const cachedData = await redis.get(cacheKey)
+
+    if (cachedData) {
+      console.log('USERS data hit');
+      if (typeof cachedData === 'string') {
+        const parsedData = JSON.parse(cachedData) as { usersWithTasks: any };
+        res.status(200).json(parsedData.usersWithTasks);
+      } else {
+
+        const data = cachedData as { usersWithTasks: any };
+        res.status(200).json(data.usersWithTasks);
+      }
+      return;
+    } else {
+      console.log("cache on USERS missed");
+    }
+    
+    
     const users = await User.find({ organization: organizationId })
       .select('-password') // Exclude passwords
       .lean();
@@ -38,6 +58,8 @@ export const getUsers = async (req: Request, res: Response): Promise<void> => {
       };
     });
 
+    await redis.set(cacheKey, JSON.stringify({ usersWithTasks}), { ex: 3600 })
+
     res.status(200).json(usersWithTasks);
   } catch (error) {
     console.error('Error fetching users:', error);
@@ -50,6 +72,25 @@ export const getUserById = async (req: Request, res: Response): Promise<void> =>
     const userPayload = req.user as unknown as IUserPayload;
     const organizationId = userPayload.organization;
     const userId = req.params.id;
+
+    const cacheKey = `user:${userId}:${organizationId}`
+    const cachedData = await redis.get(cacheKey)
+
+
+    if (cachedData) {
+      console.log('USER data hit');
+      if (typeof cachedData === 'string') {
+        const parsedData = JSON.parse(cachedData) as { usersWithTasks: any };
+        res.status(200).json(parsedData.usersWithTasks);
+      } else {
+        const data = cachedData as { usersWithTasks: any };
+        res.status(200).json(data.usersWithTasks);
+      }
+      return;
+    } else {
+      console.log("cache on USER missed");
+    }
+
 
     // 1. Find the user in the organization
     const user = await User.findOne({
@@ -97,6 +138,7 @@ export const getUserById = async (req: Request, res: Response): Promise<void> =>
       }))
     };
 
+    await redis.set(cacheKey, JSON.stringify({ response }), { ex: 3600 }  )
     res.status(200).json(response);
   } catch (error) {
     console.error('Error fetching user by id:', error);
@@ -118,6 +160,18 @@ export const deleteUser = async (req: Request, res: Response): Promise<void> => 
       return;
     }
     
+
+    await Promise.all([
+      redis.del(`users:${organizationId}`),
+      redis.del(`user:${userId}:${organizationId}`)
+
+    ])
+
+    const tasks = await Task.find({ assignedTo: userId });
+    tasks.forEach(async (task) => {
+      await redis.del(`task:${organizationId}:${task._id}`);
+    });
+
     await user. deleteOne();
     res.status(200).json({ message: 'User removed successfully' });
   } catch (error) {

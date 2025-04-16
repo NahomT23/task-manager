@@ -125,7 +125,6 @@ export const joinOrganization = async (req: Request, res: Response): Promise<voi
       res.status(403).json({ message: 'Unauthorized to join organization' });
       return;
     }
-
     const { invitationToken } = req.body;
     if (!invitationToken) {
       res.status(400).json({ message: 'Invitation token required' });
@@ -196,7 +195,6 @@ export const getOrganizationById = async (req: Request, res: Response): Promise<
     res.status(500).json({ message: 'Server error' });
   }
 };
-
 
 export const updateOrganizationName = async (req: Request, res: Response): Promise<void> => {
   try {

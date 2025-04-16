@@ -15,10 +15,28 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteUser = exports.getUserById = exports.getUsers = void 0;
 const User_1 = __importDefault(require("../models/User"));
 const Task_1 = __importDefault(require("../models/Task"));
+const upstashRedis_1 = __importDefault(require("../config/upstashRedis"));
 const getUsers = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const userPayload = req.user;
         const organizationId = userPayload.organization;
+        const cacheKey = `users:${organizationId}`;
+        const cachedData = yield upstashRedis_1.default.get(cacheKey);
+        if (cachedData) {
+            console.log('USERS data hit');
+            if (typeof cachedData === 'string') {
+                const parsedData = JSON.parse(cachedData);
+                res.status(200).json(parsedData.usersWithTasks);
+            }
+            else {
+                const data = cachedData;
+                res.status(200).json(data.usersWithTasks);
+            }
+            return;
+        }
+        else {
+            console.log("cache on USERS missed");
+        }
         const users = yield User_1.default.find({ organization: organizationId })
             .select('-password') // Exclude passwords
             .lean();
@@ -27,6 +45,7 @@ const getUsers = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             const userTasks = allTasks.filter(task => task.assignedTo.includes(user._id));
             return Object.assign(Object.assign({}, user), { pendingTasks: userTasks.filter(t => t.status === 'pending').length, inProgressTasks: userTasks.filter(t => t.status === 'inProgress').length, completedTasks: userTasks.filter(t => t.status === 'completed').length });
         });
+        yield upstashRedis_1.default.set(cacheKey, JSON.stringify({ usersWithTasks }), { ex: 3600 });
         res.status(200).json(usersWithTasks);
     }
     catch (error) {
@@ -40,6 +59,23 @@ const getUserById = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
         const userPayload = req.user;
         const organizationId = userPayload.organization;
         const userId = req.params.id;
+        const cacheKey = `user:${userId}:${organizationId}`;
+        const cachedData = yield upstashRedis_1.default.get(cacheKey);
+        if (cachedData) {
+            console.log('USER data hit');
+            if (typeof cachedData === 'string') {
+                const parsedData = JSON.parse(cachedData);
+                res.status(200).json(parsedData.usersWithTasks);
+            }
+            else {
+                const data = cachedData;
+                res.status(200).json(data.usersWithTasks);
+            }
+            return;
+        }
+        else {
+            console.log("cache on USER missed");
+        }
         // 1. Find the user in the organization
         const user = yield User_1.default.findOne({
             _id: userId,
@@ -80,6 +116,7 @@ const getUserById = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
                 createdAt: task.createdAt
             }))
         };
+        yield upstashRedis_1.default.set(cacheKey, JSON.stringify({ response }), { ex: 3600 });
         res.status(200).json(response);
     }
     catch (error) {
@@ -99,6 +136,14 @@ const deleteUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
             res.status(404).json({ message: 'User not found in your organization' });
             return;
         }
+        yield Promise.all([
+            upstashRedis_1.default.del(`users:${organizationId}`),
+            upstashRedis_1.default.del(`user:${userId}:${organizationId}`)
+        ]);
+        const tasks = yield Task_1.default.find({ assignedTo: userId });
+        tasks.forEach((task) => __awaiter(void 0, void 0, void 0, function* () {
+            yield upstashRedis_1.default.del(`task:${organizationId}:${task._id}`);
+        }));
         yield user.deleteOne();
         res.status(200).json({ message: 'User removed successfully' });
     }

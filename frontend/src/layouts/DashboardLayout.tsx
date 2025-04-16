@@ -3,6 +3,7 @@ import { useAuthStore } from "../store/authStore";
 import Navbar from "./Navbar";
 import SideMenu from "./SideMenu";
 import Chatbot from "../pages/Admin/Chatbot";
+import Chat from '../components/chat/Chatbox'
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -26,7 +27,7 @@ const DashboardLayout = ({ children, activeMenu }: DashboardLayoutProps) => {
           </div>
         </div>
       )}
-      {user?.role === 'admin' && <Chatbot />}
+      {user?.role === 'admin' ? <Chatbot /> : <Chat/>}
     </div>
   );
 };
