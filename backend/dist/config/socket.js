@@ -13,6 +13,7 @@ exports.initializeSocket = initializeSocket;
 const socket_io_1 = require("socket.io");
 const socketMiddleware_1 = require("../middlewares/socketMiddleware");
 const msgController_1 = require("../controllers/msgController");
+const onlineUsers = {};
 function initializeSocket(server) {
     const io = new socket_io_1.Server(server, {
         cors: {
@@ -30,6 +31,10 @@ function initializeSocket(server) {
         const orgId = user.organization;
         console.log(`User ${user._id} connected and joining organization ${orgId}`);
         socket.join(orgId);
+        // Mark user as online (increment the count)
+        onlineUsers[user._id] = (onlineUsers[user._id] || 0) + 1;
+        // Broadcast updated online status to everyone in the organization room
+        io.to(orgId).emit('updateOnlineStatus', onlineUsers);
         socket.on('sendMessage', (messageText) => __awaiter(this, void 0, void 0, function* () {
             console.log(`Received message from user ${user._id}: ${messageText}`);
             try {
@@ -42,6 +47,12 @@ function initializeSocket(server) {
         }));
         socket.on('disconnect', () => {
             console.log(`User ${user._id} disconnected`);
+            // Decrement the count – if no sockets remain, remove the user from the online list
+            onlineUsers[user._id] = (onlineUsers[user._id] || 1) - 1;
+            if (onlineUsers[user._id] <= 0) {
+                delete onlineUsers[user._id];
+            }
+            io.to(orgId).emit('updateOnlineStatus', onlineUsers);
         });
     });
 }
