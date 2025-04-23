@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import axiosInstance from '../../api/axiosInstance';
-import { AiOutlineMessage, AiOutlineClose, AiOutlineCopy } from "react-icons/ai";
+import { AiOutlineClose, AiOutlineCopy } from "react-icons/ai";
 import { BsThreeDots } from "react-icons/bs";
 import { useThemeStore } from "../../store/themeStore";
 import { useAuthStore } from '../../store/authStore';

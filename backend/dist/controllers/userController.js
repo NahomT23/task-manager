@@ -59,23 +59,6 @@ const getUserById = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
         const userPayload = req.user;
         const organizationId = userPayload.organization;
         const userId = req.params.id;
-        const cacheKey = `user:${userId}:${organizationId}`;
-        const cachedData = yield upstashRedis_1.default.get(cacheKey);
-        if (cachedData) {
-            console.log('USER data hit');
-            if (typeof cachedData === 'string') {
-                const parsedData = JSON.parse(cachedData);
-                res.status(200).json(parsedData.usersWithTasks);
-            }
-            else {
-                const data = cachedData;
-                res.status(200).json(data.usersWithTasks);
-            }
-            return;
-        }
-        else {
-            console.log("cache on USER missed");
-        }
         // 1. Find the user in the organization
         const user = yield User_1.default.findOne({
             _id: userId,
@@ -116,7 +99,6 @@ const getUserById = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
                 createdAt: task.createdAt
             }))
         };
-        yield upstashRedis_1.default.set(cacheKey, JSON.stringify({ response }), { ex: 3600 });
         res.status(200).json(response);
     }
     catch (error) {
@@ -138,7 +120,6 @@ const deleteUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         }
         yield Promise.all([
             upstashRedis_1.default.del(`users:${organizationId}`),
-            upstashRedis_1.default.del(`user:${userId}:${organizationId}`)
         ]);
         const tasks = yield Task_1.default.find({ assignedTo: userId });
         tasks.forEach((task) => __awaiter(void 0, void 0, void 0, function* () {

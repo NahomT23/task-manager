@@ -73,23 +73,6 @@ export const getUserById = async (req: Request, res: Response): Promise<void> =>
     const organizationId = userPayload.organization;
     const userId = req.params.id;
 
-    const cacheKey = `user:${userId}:${organizationId}`
-    const cachedData = await redis.get(cacheKey)
-
-
-    if (cachedData) {
-      console.log('USER data hit');
-      if (typeof cachedData === 'string') {
-        const parsedData = JSON.parse(cachedData) as { usersWithTasks: any };
-        res.status(200).json(parsedData.usersWithTasks);
-      } else {
-        const data = cachedData as { usersWithTasks: any };
-        res.status(200).json(data.usersWithTasks);
-      }
-      return;
-    } else {
-      console.log("cache on USER missed");
-    }
 
 
     // 1. Find the user in the organization
@@ -138,7 +121,7 @@ export const getUserById = async (req: Request, res: Response): Promise<void> =>
       }))
     };
 
-    await redis.set(cacheKey, JSON.stringify({ response }), { ex: 3600 }  )
+
     res.status(200).json(response);
   } catch (error) {
     console.error('Error fetching user by id:', error);
@@ -163,8 +146,6 @@ export const deleteUser = async (req: Request, res: Response): Promise<void> => 
 
     await Promise.all([
       redis.del(`users:${organizationId}`),
-      redis.del(`user:${userId}:${organizationId}`)
-
     ])
 
     const tasks = await Task.find({ assignedTo: userId });

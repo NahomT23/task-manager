@@ -178,19 +178,19 @@ function fetchOrganizationData(userId) {
     });
 }
 const chatbot = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
+    var _a, _b, _c;
     try {
         if (typeof req.body.message !== 'string') {
             throw new Error('Invalid input type');
         }
         const data = yield fetchOrganizationData((_a = req.user) === null || _a === void 0 ? void 0 : _a.id);
         const originalMessage = req.body.message || '';
-        // Validate and sanitize the original user input
+        // Validate and sanitize input
         const safeOriginalMessage = (0, chatbotService_1.validateInput)(originalMessage);
-        // Reject the request if sanitization altered the message (indicating a possible injection attempt)
         if (safeOriginalMessage !== originalMessage) {
             throw new Error('Invalid input detected');
         }
+        // Handle greetings
         const greetingRegex = /^(hey|hello|hi|good morning|good afternoon)\b/i;
         if (greetingRegex.test(safeOriginalMessage.trim()) || safeOriginalMessage.trim() === '') {
             const greetingResponsePseudo = `Hey ${data.organization.pseudo_data.admin_pseudo.pseudo_name}, how may I assist you today?`;
@@ -198,68 +198,97 @@ const chatbot = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             res.status(200).json({ response: greetingResponseReal });
             return;
         }
+        // Secure and prepare data
         const securedData = (0, chatbotService_1.secureContextData)(data);
-        // Convert the real message into a pseudo context.
         const pseudoMessage = (0, chatbotService_1.replaceRealWithPseudo)(safeOriginalMessage, data);
-        // Build the pseudo data context for the AI.
+        // Prepare AI context
         const pseudoData = {
-            organization: data.organization.pseudo_data,
-            members: data.members.map((member) => ({
+            organization: securedData.organization.pseudo_data,
+            members: securedData.members.map((member) => ({
                 pseudo_name: member.pseudo_data.pseudo_name,
                 pseudo_email: member.pseudo_data.pseudo_email,
-                created_at: member.real_data.created_at,
                 role: member.role,
                 task_stats: member.task_stats
             })),
-            tasks: data.tasks.map((task) => ({
+            tasks: securedData.tasks.map((task) => ({
                 title: task.title,
-                description: task.description,
                 status: task.status,
                 priority: task.priority,
                 pseudo_created_by: task.pseudo_data.created_by,
                 pseudo_assigned_to: task.pseudo_data.assigned_to,
-                pseudo_attachments: task.pseudo_data.attachments,
-                pseudo_todos: task.pseudo_data.todos,
-                created_at: task.real_data.created_at,
-                due_date: task.real_data.due_date,
-                total_todos: task.real_data.total_todos,
-                completed_todos: task.real_data.completed_todos
-            })),
-            invitations: data.organization.invitations
+            }))
         };
-        // Include the safety prompt in the system instructions.
+        // AI instructions with safety rules
         const instructions = `${chatbotService_1.SAFETY_PROMPT}
-You are ${securedData.organization.pseudo_data.pseudo_name}'s personal AI assistant.
-If a user asks about any topic outside ${securedData.organization.pseudo_data.pseudo_name}, respond with:
-"I am ${securedData.organization.pseudo_data.pseudo_name}'s personal AI assistant and I can’t answer anything outside ${securedData.organization.pseudo_data.pseudo_name}."`;
-        const fullMessage = `${instructions}
-Data Context:
-${JSON.stringify(pseudoData, null, 2)}
-
-User Query:
-${pseudoMessage}`;
+You are ${securedData.organization.pseudo_data.pseudo_name}'s organizational assistant.
+For deletion requests, respond EXACTLY with: [DELETE_USER:{pseudo_email}]`;
         const chatSession = model.startChat({
             history: [{
                     role: 'user',
-                    parts: [{ text: fullMessage }]
+                    parts: [{ text: `${instructions}\n\nContext:\n${JSON.stringify(pseudoData)}\n\nQuery: ${pseudoMessage}` }]
                 }],
             generationConfig: {
-                temperature: 0.7,
-                topP: 0.95,
-                maxOutputTokens: 8192,
+                temperature: 0.5,
+                maxOutputTokens: 1000,
             },
         });
-        const result = yield chatSession.sendMessage(fullMessage);
+        // Get AI response
+        const result = yield chatSession.sendMessage(pseudoMessage);
         const pseudoResponse = result.response.text();
-        console.log(pseudoResponse);
-        // Validate and sanitize the AI's pseudo response before converting back to real values.
-        const safePseudoResponse = (0, chatbotService_1.validateInput)(pseudoResponse);
-        const finalResponse = (0, chatbotService_1.replacePseudoWithReal)(safePseudoResponse, data);
+        // Handle deletion command
+        const deleteCommandRegex = /\[DELETE_USER:(.+?)\]/;
+        const deleteMatch = pseudoResponse.match(deleteCommandRegex);
+        let finalResponse;
+        if (deleteMatch) {
+            try {
+                const pseudoEmail = deleteMatch[1];
+                // Verify admin permissions
+                const adminUser = yield User_1.default.findById((_b = req.user) === null || _b === void 0 ? void 0 : _b.id)
+                    .select('role organization');
+                if (!adminUser || adminUser.role !== 'admin') {
+                    throw new Error('Unauthorized');
+                }
+                // Find member to delete
+                const memberData = data.members.find((m) => m.pseudo_data.pseudo_email === pseudoEmail);
+                if (!memberData) {
+                    throw new Error('Member not found');
+                }
+                // Database operations
+                const userToDelete = yield User_1.default.findOneAndDelete({
+                    email: memberData.real_data.email,
+                    organization: adminUser.organization
+                });
+                if (!userToDelete) {
+                    throw new Error('User not found in database');
+                }
+                // Remove from tasks
+                yield Task_1.default.updateMany({ assignedTo: userToDelete._id }, { $pull: { assignedTo: userToDelete._id } });
+                yield Promise.all([
+                    upstashRedis_1.default.del(`orgData:${(_c = req.user) === null || _c === void 0 ? void 0 : _c.id}`),
+                    upstashRedis_1.default.del(`user:${userToDelete._id}`),
+                    upstashRedis_1.default.del(`tasks:${adminUser.organization}`),
+                    upstashRedis_1.default.del(`users:${adminUser.organization}`)
+                ]);
+                finalResponse = `User ${memberData.real_data.name} has been successfully deleted.`;
+            }
+            catch (error) {
+                console.error('Deletion error:', error);
+                finalResponse = 'Failed to process deletion request. Please verify permissions and try again.';
+            }
+        }
+        else {
+            const safePseudoResponse = (0, chatbotService_1.validateInput)(pseudoResponse);
+            finalResponse = (0, chatbotService_1.replacePseudoWithReal)(safePseudoResponse, data);
+        }
         res.status(200).json({ response: finalResponse });
     }
     catch (error) {
-        console.error('API Error:', error.message);
-        res.status(500).json({ error: 'Failed to generate response' });
+        console.error('Chatbot Error:', error.message);
+        res.status(500).json({
+            error: error.message.startsWith('Invalid')
+                ? 'Invalid request format'
+                : 'Internal server error'
+        });
     }
 });
 exports.chatbot = chatbot;
