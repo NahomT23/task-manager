@@ -288,11 +288,18 @@ const createTask = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
                 console.error('Email send failed:', emailError);
             }
         }));
+        const statusVariants = ["All", "pending", "inProgress", "completed"];
         yield Promise.all([
+            // clear single‐task caches
             upstashRedis_1.default.del(`task:${organization}`),
+            upstashRedis_1.default.del(`task:${organization}:${savedTask._id}`),
+            // clear admin caches
             upstashRedis_1.default.del(`adminData:${organization}`),
             upstashRedis_1.default.del(`allTaskData:${organization}`),
-            ...assignedArray.map(uid => upstashRedis_1.default.del(`myTasks:${uid}:All`))
+            // clear every variant of myTasks for each assigned user
+            ...assignedArray.flatMap(uid => statusVariants.map(status => upstashRedis_1.default.del(`myTasks:${uid}:${status}`))),
+            // clear the member dashboard cache too:
+            ...assignedArray.map(uid => upstashRedis_1.default.del(`memberData:${uid}`)),
         ]);
         res.status(201).json({ task: savedTask });
     }
@@ -424,7 +431,6 @@ const deleteTask = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
     }
 });
 exports.deleteTask = deleteTask;
-// Updates the status of a task
 const updateTaskStatus = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { id } = req.params;
@@ -435,25 +441,29 @@ const updateTaskStatus = (req, res) => __awaiter(void 0, void 0, void 0, functio
             res.status(400).json({ message: "Invalid status value." });
             return;
         }
-        const task = yield Task_1.default.findOneAndUpdate({ _id: id, organization: organizationId }, { status }, { new: true });
+        // update the task
+        const task = yield Task_1.default.findOneAndUpdate({ _id: id, organization: organizationId }, { status }, { new: true }).lean();
         if (!task) {
             res.status(404).json({ message: "Task not found." });
             return;
         }
         const statusVariants = ["All", "pending", "inProgress", "completed"];
-        const assignedUserIds = (task.assignedTo || []).map(user => user.toString());
+        const assignedUserIds = (task.assignedTo || []).map(u => u.toString());
         yield Promise.all([
             upstashRedis_1.default.del(`task:${organizationId}`),
             upstashRedis_1.default.del(`task:${organizationId}:${id}`),
             upstashRedis_1.default.del(`adminData:${organizationId}`),
             upstashRedis_1.default.del(`allTaskData:${organizationId}`),
-            ...assignedUserIds.flatMap(uid => statusVariants.map(status => upstashRedis_1.default.del(`myTasks:${uid}:${status}`)))
+            ...assignedUserIds.flatMap(uid => statusVariants.map(variant => upstashRedis_1.default.del(`myTasks:${uid}:${variant}`))),
+            ...assignedUserIds.map(uid => upstashRedis_1.default.del(`memberData:${uid}`)),
         ]);
         res.status(200).json({ task });
+        return;
     }
     catch (error) {
         console.error("Error in updateTaskStatus:", error);
         res.status(500).json({ message: "Server error." });
+        return;
     }
 });
 exports.updateTaskStatus = updateTaskStatus;

@@ -348,12 +348,30 @@ export const createTask = async (req: Request, res: Response) => {
       }
     });
 
-    await Promise.all([
-      redisClient.del(`task:${organization}`),
-      redisClient.del(`adminData:${organization}`),
-      redisClient.del(`allTaskData:${organization}`),
-      ...assignedArray.map(uid => redisClient.del(`myTasks:${uid}:All`))
-    ]);
+    const statusVariants = ["All", "pending", "inProgress", "completed"];
+    
+await Promise.all([
+  // clear single‐task caches
+  redisClient.del(`task:${organization}`),
+  redisClient.del(`task:${organization}:${savedTask._id}`),
+
+  // clear admin caches
+  redisClient.del(`adminData:${organization}`),
+  redisClient.del(`allTaskData:${organization}`),
+
+  // clear every variant of myTasks for each assigned user
+  ...assignedArray.flatMap(uid =>
+    statusVariants.map(status =>
+      redisClient.del(`myTasks:${uid}:${status}`)
+    )
+  ),
+
+  // clear the member dashboard cache too:
+  ...assignedArray.map(uid =>
+    redisClient.del(`memberData:${uid}`)
+  ),
+]);
+
     
 
     res.status(201).json({ task: savedTask });
@@ -519,48 +537,59 @@ export const deleteTask = async (req: Request, res: Response) => {
   }
 };
 
-// Updates the status of a task
 export const updateTaskStatus = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
     const organizationId = req.user!.organization;
 
-    const allowedStatus = ["pending", "inProgress", "completed"];
-    if (!allowedStatus.includes(status)) {
+
+    const allowedStatus = ["pending", "inProgress", "completed"] as const;
+    if (!allowedStatus.includes(status as typeof allowedStatus[number])) {
       res.status(400).json({ message: "Invalid status value." });
       return;
     }
 
+    // update the task
     const task = await Task.findOneAndUpdate(
       { _id: id, organization: organizationId },
       { status },
       { new: true }
-    );
-
+    ).lean();
     if (!task) {
       res.status(404).json({ message: "Task not found." });
       return;
     }
 
     const statusVariants = ["All", "pending", "inProgress", "completed"];
-    const assignedUserIds = (task.assignedTo || []).map(user => user.toString());
+    const assignedUserIds = (task.assignedTo || []).map(u => u.toString());
 
     await Promise.all([
       redisClient.del(`task:${organizationId}`),
       redisClient.del(`task:${organizationId}:${id}`),
+
       redisClient.del(`adminData:${organizationId}`),
       redisClient.del(`allTaskData:${organizationId}`),
+
       ...assignedUserIds.flatMap(uid =>
-        statusVariants.map(status => redisClient.del(`myTasks:${uid}:${status}`))
-      )
+        statusVariants.map(variant =>
+          redisClient.del(`myTasks:${uid}:${variant}`)
+        )
+      ),
+      ...assignedUserIds.map(uid =>
+        redisClient.del(`memberData:${uid}`)
+      ),
     ]);
 
+ 
     res.status(200).json({ task });
+    return;
   } catch (error) {
     console.error("Error in updateTaskStatus:", error);
     res.status(500).json({ message: "Server error." });
+    return;
   }
 };
+
 
 
