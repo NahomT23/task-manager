@@ -49,30 +49,29 @@ const Chat = ({ toggle, onClose }: ChatProps) => {
   };
 
   useEffect(() => {
-    if (!orgName) return;
-
+    // Remove orgName dependency
     const newSocket = io(BACKEND_URL, {
       auth: { token: localStorage.getItem('token') }
     });
-
+  
     newSocket.on('connect', () => {
       console.log('Socket connected:', newSocket.id);
     });
-
+  
     newSocket.on('newMessage', (message: Message) => {
       setMessages(prev => [...prev, message]);
     });
-
+  
     newSocket.on('updateOnlineStatus', (onlineData: { [userId: string]: number }) => {
       setOnlineUsers(onlineData);
     });
-
+  
     socketRef.current = newSocket;
-
+  
     return () => {
       newSocket.disconnect();
     };
-  }, [orgName]);
+  }, []); // Removed orgName dependency
 
   useEffect(() => {
     if (!orgName) return;

@@ -28,15 +28,12 @@ function initializeSocket(server) {
             console.error("Socket connected without user data");
             return;
         }
-        const orgId = user.organization;
-        console.log(`User ${user._id} connected and joining organization ${orgId}`);
+        const orgId = user.organization.toString();
+        console.log(`User ${user._id} joining room ${orgId}`);
         socket.join(orgId);
-        // Mark user as online (increment the count)
         onlineUsers[user._id] = (onlineUsers[user._id] || 0) + 1;
-        // Broadcast updated online status to everyone in the organization room
         io.to(orgId).emit('updateOnlineStatus', onlineUsers);
         socket.on('sendMessage', (messageText) => __awaiter(this, void 0, void 0, function* () {
-            console.log(`Received message from user ${user._id}: ${messageText}`);
             try {
                 const populatedMessage = yield (0, msgController_1.saveMessage)(messageText, user._id, orgId);
                 io.to(orgId).emit('newMessage', populatedMessage);
@@ -46,12 +43,9 @@ function initializeSocket(server) {
             }
         }));
         socket.on('disconnect', () => {
-            console.log(`User ${user._id} disconnected`);
-            // Decrement the count – if no sockets remain, remove the user from the online list
             onlineUsers[user._id] = (onlineUsers[user._id] || 1) - 1;
-            if (onlineUsers[user._id] <= 0) {
+            if (onlineUsers[user._id] <= 0)
                 delete onlineUsers[user._id];
-            }
             io.to(orgId).emit('updateOnlineStatus', onlineUsers);
         });
     });

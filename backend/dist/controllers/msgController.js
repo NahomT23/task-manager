@@ -26,8 +26,8 @@ const getMessages = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
         }
         const messages = yield Message_1.default.find({ organization: organization._id })
             .populate('sender', 'name profileImageUrl')
-            .sort({ timestamp: -1 }) // Get newest messages first
-            .limit(100); // Add pagination
+            .sort({ timestamp: -1 })
+            .limit(100);
         res.status(200).json(messages.reverse()); // Reverse for correct order
     }
     catch (error) {

@@ -17,9 +17,8 @@ export const getMessages = async (req: Request, res: Response): Promise<void> =>
   
       const messages = await Message.find({ organization: organization._id })
         .populate('sender', 'name profileImageUrl')
-        .sort({ timestamp: -1 }) // Get newest messages first
-        .limit(100); // Add pagination
-  
+        .sort({ timestamp: -1 }) 
+        .limit(100); 
       res.status(200).json(messages.reverse()); // Reverse for correct order
     } catch (error) {
       console.error('Error fetching messages:', error);

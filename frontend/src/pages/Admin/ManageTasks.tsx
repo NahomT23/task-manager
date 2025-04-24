@@ -37,7 +37,7 @@ interface StatusSummary {
   completed: number;
 }
 
-// 1. Fetcher
+
 const fetchTasks = async (
   filterStatus: string
 ): Promise<{ tasks: Task[]; statusSummary: StatusSummary }> => {
@@ -58,7 +58,7 @@ const ManageTasks = () => {
   const { isDarkMode } = useThemeStore();
   const navigate = useNavigate();
 
-  // 2. useQuery with single-object API + generics
+
   const { data, isLoading, isError }: UseQueryResult<
     { tasks: Task[]; statusSummary: StatusSummary },
     Error
@@ -67,7 +67,7 @@ const ManageTasks = () => {
     queryFn: () => fetchTasks(filterStatus),
   });
 
-  // 3. Safely unpack
+
   const tasks: Task[] = data?.tasks ?? [];
   const statusSummary: StatusSummary = data?.statusSummary ?? {
     All: 0,
