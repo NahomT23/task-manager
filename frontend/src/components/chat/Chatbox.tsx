@@ -231,13 +231,11 @@ const Chat = ({ toggle, onClose }: ChatProps) => {
           className={`flex-1 p-2 text-sm rounded-lg focus:outline-none ${isDarkMode ? "bg-gray-700 text-gray-200" : "bg-gray-100 text-gray-900"}`}
         />
         <button
-          type="submit"
           disabled={isLoading || isSending}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 
-            ${isDarkMode 
-              ? "bg-blue-600 hover:bg-blue-500 text-white" 
-              : "bg-blue-500 hover:bg-blue-400 text-white"
-            }
+          type="submit"
+          className={`flex-shrink-0 p-2 rounded-lg transition-colors duration-200 ${
+            isDarkMode ? "bg-blue-600 hover:bg-blue-500" : "bg-blue-500 hover:bg-blue-400"
+          } text-white
             ${isSending ? 'opacity-70 cursor-not-allowed' : ''}
             flex items-center gap-2
           `}

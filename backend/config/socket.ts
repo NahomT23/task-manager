@@ -5,19 +5,17 @@ import http from 'http';
 
 const onlineUsers: { [userId: string]: number } = {};
 
+
+
+
 export function initializeSocket(server: http.Server): void {
   const io = new Server(server, {
     cors: {
-      origin: [
-        'http://localhost:5173',
-        'https://task-manager-eosin-eight.vercel.app'
-      ],
-      methods: ['GET','POST'],
-      credentials: true
-    }
+      origin: process.env.CLIENT_URL,
+      methods: ['GET', 'POST'],
+    },
   });
-  
-  
+
   io.use(authenticateSocket);
 
   io.on('connection', (socket) => {
