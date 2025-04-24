@@ -8,11 +8,16 @@ const onlineUsers: { [userId: string]: number } = {};
 export function initializeSocket(server: http.Server): void {
   const io = new Server(server, {
     cors: {
-      origin: process.env.CLIENT_URL,
-      methods: ['GET', 'POST'],
-    },
+      origin: [
+        'http://localhost:5173',
+        'https://task-manager-eosin-eight.vercel.app'
+      ],
+      methods: ['GET','POST'],
+      credentials: true
+    }
   });
-
+  
+  
   io.use(authenticateSocket);
 
   io.on('connection', (socket) => {
