@@ -1,4 +1,3 @@
-
 # 🚀 Taskflow – Multi-Tenant Role-Based Task Management Platform
 
 **Taskflow** is a powerful full-stack web application built with modern technologies, offering a complete **multi-tenant**, **role-based** task management system. With real-time updates, analytics, email notifications, AI assistance, and secure user handling — it's built for both productivity and scalability.
@@ -10,16 +9,20 @@
 ### Backend:
 - **Node.js** + **Express** (with **TypeScript**)
 - **MongoDB** + **Mongoose**
+- **Redis** for caching
 - **JWT Authentication**
 - **Nodemailer** for transactional emails
 - **Cloudinary** for profile image storage
+- **Socket.IO** for real-time organization chat
 - **Gemini AI API** for chatbot integration
 
 ### Frontend:
 - **React** (with **TypeScript**)
 - **TailwindCSS** for styling
 - **Zustand** for state management
+- **TanStack Query** for frontend caching
 - **React Hook Form** + **Zod** for form validation
+- **Socket.IO Client** for live chat
 
 ---
 
@@ -46,6 +49,15 @@
 - Real-time updates across the organization
 - Role-restricted visibility: members see only their tasks
 
+### 💬 Organization Chat
+- Real-time messaging within organizations
+- Built using **Socket.IO** for backend and frontend
+- Instant updates across users without refreshing
+
+### 📦 Caching
+- **Backend:** Redis caching for improved performance and reduced database load
+- **Frontend:** TanStack Query for efficient data fetching, caching, and background updates
+
 ### 📧 Email Notifications
 - Users receive an email upon task assignment
 - Admins get notified when a task is completed (with user list & task info)
@@ -53,6 +65,7 @@
 ### 🤖 AI Chatbot (Powered by Gemini AI)
 - Admin-exclusive chatbot trained on org-specific data
 - Answers questions, summarizes tasks, and provides real-time insights
+- Can delete users upon admins request
 
 ### 📊 Analytics & Reports
 - Visual charts and metrics in admin dashboard
@@ -70,12 +83,12 @@
 ## 🌍 Environment Variables
 
 ### 🧠 Frontend (`/Frontend`)
-```
+```env
 VITE_API_URL=your_backend_api_url
 ```
 
 ### ⚙️ Backend (`/Backend`)
-```
+```env
 CLIENT_URL=your_frontend_url
 FRONTEND_URL=your_frontend_url
 JWT_SECRET=your_jwt_secret
@@ -89,13 +102,13 @@ CLOUDINARY_API_NAME=your_cloudinary_cloud_name
 CLOUDINARY_API_SECRET=your_cloudinary_api_secret
 
 GEINI_API_KEY=your_gemini_api_key
+
+REDIS_URL=your_redis_server_url
 ```
 
 > 🔒 Make sure to store these securely and **never commit them to your repo**!
 
 ---
-
-
 
 ## 🚀 Getting Started
 
