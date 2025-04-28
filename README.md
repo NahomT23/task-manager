@@ -70,7 +70,7 @@
 ### 📊 Analytics & Reports
 - Visual charts and metrics in admin dashboard
 - Task and user insights
-- Downloadable reports:
+- Downloadable reports(PDF or Excel format):
   - Users: see their own tasks
   - Admins: see full org-wide data
 
