@@ -311,22 +311,28 @@ const createTask = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
 exports.createTask = createTask;
 // update task cehcklist
 const updateTaskCheckList = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
+    var _a, _b;
     try {
         const { id } = req.params;
         const { todoChecklist } = req.body;
         const organizationId = req.user.organization;
-        // Compute the new status based on the updated todo checklist
+        // Calculate progress and status
+        const totalTodos = todoChecklist.length;
         const completedCount = todoChecklist.filter((todo) => todo.completed).length;
+        const newProgress = totalTodos > 0 ? Math.round((completedCount / totalTodos) * 100) : 0;
         let newStatus = "pending";
-        if (completedCount === todoChecklist.length) {
+        if (completedCount === totalTodos) {
             newStatus = "completed";
         }
         else if (completedCount > 0) {
             newStatus = "inProgress";
         }
-        // Update both the todo checklist and the status together
-        const task = yield Task_1.default.findOneAndUpdate({ _id: id, organization: organizationId }, { todoChecklist, status: newStatus }, { new: true });
+        // Update task with both progress and status
+        const task = yield Task_1.default.findOneAndUpdate({ _id: id, organization: organizationId }, {
+            todoChecklist,
+            status: newStatus,
+            progress: newProgress // Add progress update here
+        }, { new: true });
         if (!task) {
             res.status(404).json({ message: "Task not found." });
             return;
@@ -367,6 +373,14 @@ const updateTaskCheckList = (req, res) => __awaiter(void 0, void 0, void 0, func
             upstashRedis_1.default.del(`adminData:${organizationId}`),
             upstashRedis_1.default.del(`allTaskData:${organizationId}`),
             ...(task.assignedTo || []).flatMap(uid => statusVariants.map(status => upstashRedis_1.default.del(`myTasks:${uid.toString()}:${status}`)))
+        ]);
+        const userId = (_b = req.user) === null || _b === void 0 ? void 0 : _b._id;
+        yield Promise.all([
+            upstashRedis_1.default.del(`myTasks:${userId}:All`),
+            upstashRedis_1.default.del(`myTasks:${userId}:pending`),
+            upstashRedis_1.default.del(`myTasks:${userId}:inProgress`),
+            upstashRedis_1.default.del(`myTasks:${userId}:completed`),
+            upstashRedis_1.default.del(`memberData:${userId}`),
         ]);
         res.status(200).json({ task });
     }

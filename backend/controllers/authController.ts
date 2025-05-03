@@ -5,6 +5,7 @@ import User from '../models/User';
 import Organization from '../models/Organization';
 import mongoose from 'mongoose';
 import { generateToken, generateUniquePseudo } from '../services/generate';
+import redis from '../config/upstashRedis';
 
 const signup = async (req: Request, res: Response): Promise<void> => {
   const errors = validationResult(req);
@@ -73,14 +74,17 @@ const signup = async (req: Request, res: Response): Promise<void> => {
 
     await newUser.save();
 
-    // Update organization if invited
     if (invitationCode && organizationId) {
       await Organization.findByIdAndUpdate(organizationId, {
         $push: { members: newUser._id },
       });
+
+      // Add this line 👇
+      await redis.del(`users:${organizationId}`);
     }
 
     // Generate JWT token
+
     const token = generateToken(newUser._id.toString());
 
     res.status(201).json({
@@ -131,6 +135,8 @@ const signin = async (req: Request, res: Response): Promise<void> => {
         organization: user.organization,
       },
     });
+
+
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error' });

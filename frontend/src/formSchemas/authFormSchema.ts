@@ -12,8 +12,13 @@ export const SignUpSchema = z.object({
   invitationCode: z.string().optional(),
   profileImage: z
     .any()
-    .refine((files) => !files || files.length === 0 || files[0] instanceof File, {
-      message: "Profile image must be a file",
-    })
+    .refine(
+      (file) => {
+        if (!file) return true; // optional
+        if (file instanceof FileList && file.length > 0) return true;
+        return false;
+      },
+      { message: "Profile image must be a file" }
+    )
     .optional(),
 });

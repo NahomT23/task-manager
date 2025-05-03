@@ -52,8 +52,7 @@ const Setup: React.FC = () => {
         setAuth(response.data.token, response.data.user);
         const orgName = response.data.organization.name;
         toast.success(`Joined ${orgName} successfully`);
-        navigate('/user/dashboard');
-        window.location.reload();
+        navigate('/signin');
       } else {
         toast.error('Failed to join organization');
       }
@@ -63,7 +62,7 @@ const Setup: React.FC = () => {
     }
   };
   
-  
+
     const cardVariants = {
       initial: { opacity: 0, y: 20 },
       animate: { opacity: 1, y: 0 },

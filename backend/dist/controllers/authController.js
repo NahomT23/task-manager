@@ -18,6 +18,7 @@ const express_validator_1 = require("express-validator");
 const User_1 = __importDefault(require("../models/User"));
 const Organization_1 = __importDefault(require("../models/Organization"));
 const generate_1 = require("../services/generate");
+const upstashRedis_1 = __importDefault(require("../config/upstashRedis"));
 const signup = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const errors = (0, express_validator_1.validationResult)(req);
     if (!errors.isEmpty()) {
@@ -71,11 +72,12 @@ const signup = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             pseudo_email
         });
         yield newUser.save();
-        // Update organization if invited
         if (invitationCode && organizationId) {
             yield Organization_1.default.findByIdAndUpdate(organizationId, {
                 $push: { members: newUser._id },
             });
+            // Add this line 👇
+            yield upstashRedis_1.default.del(`users:${organizationId}`);
         }
         // Generate JWT token
         const token = (0, generate_1.generateToken)(newUser._id.toString());

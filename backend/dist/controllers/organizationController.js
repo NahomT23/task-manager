@@ -18,6 +18,7 @@ const Organization_1 = __importDefault(require("../models/Organization"));
 const User_1 = __importDefault(require("../models/User"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const generate_1 = require("../services/generate");
+const upstashRedis_1 = __importDefault(require("../config/upstashRedis"));
 const generateInvitationCode = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         if (!req.user || req.user.role !== 'admin') {
@@ -136,6 +137,8 @@ const joinOrganization = (req, res) => __awaiter(void 0, void 0, void 0, functio
         yield organization.save();
         // Update user role and organization
         const user = yield User_1.default.findByIdAndUpdate(req.user.id, { role: 'member', organization: organization._id }, { new: true });
+        const organizationId = organization._id;
+        yield upstashRedis_1.default.del(`users:${organizationId}`);
         res.status(200).json({
             message: `Joined ${organization.name} successfully`,
             organization,

@@ -388,21 +388,29 @@ export const updateTaskCheckList = async (req: Request, res: Response) => {
     const { todoChecklist } = req.body;
     const organizationId = req.user!.organization;
 
-    // Compute the new status based on the updated todo checklist
+    // Calculate progress and status
+    const totalTodos = todoChecklist.length;
     const completedCount = todoChecklist.filter((todo: { completed: boolean }) => todo.completed).length;
+    const newProgress = totalTodos > 0 ? Math.round((completedCount / totalTodos) * 100) : 0;
+    
     let newStatus: "pending" | "inProgress" | "completed" = "pending";
-    if (completedCount === todoChecklist.length) {
+    if (completedCount === totalTodos) {
       newStatus = "completed";
     } else if (completedCount > 0) {
       newStatus = "inProgress";
     }
 
-    // Update both the todo checklist and the status together
+    // Update task with both progress and status
     const task = await Task.findOneAndUpdate(
       { _id: id, organization: organizationId },
-      { todoChecklist, status: newStatus },
+      { 
+        todoChecklist, 
+        status: newStatus,
+        progress: newProgress // Add progress update here
+      },
       { new: true }
     );
+
 
     if (!task) {
       res.status(404).json({ message: "Task not found." });
@@ -460,6 +468,15 @@ export const updateTaskCheckList = async (req: Request, res: Response) => {
       )
     ]);
 
+    const userId  = req.user?._id
+
+    await Promise.all([
+      redisClient.del(`myTasks:${userId}:All`),
+      redisClient.del(`myTasks:${userId}:pending`),
+      redisClient.del(`myTasks:${userId}:inProgress`),
+      redisClient.del(`myTasks:${userId}:completed`),
+      redisClient.del(`memberData:${userId}`),
+    ]);
     res.status(200).json({ task });
   } catch (error) {
     console.error("Error in updateTaskCheckList:", error);

@@ -4,6 +4,7 @@ import Organization from '../models/Organization';
 import User from '../models/User';
 import jwt from 'jsonwebtoken';
 import { generateUniquePseudo } from '../services/generate';
+import redis from '../config/upstashRedis';
 
 export const generateInvitationCode = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -165,6 +166,9 @@ export const joinOrganization = async (req: Request, res: Response): Promise<voi
       { role: 'member', organization: organization._id },
       { new: true }
     );
+
+    const organizationId = organization._id
+    await redis.del(`users:${organizationId}`);
 
     res.status(200).json({
       message: `Joined ${organization.name} successfully`,

@@ -6,8 +6,7 @@ import TaskStatusTabs from "../../components/TaskStatusTabs";
 import { TaskCard } from "../../components/Cards/TaskCard";
 import TaskCardSkeleton from "../../components/skeleton/TaskCardSkeleton";
 import { useThemeStore } from "../../store/themeStore";
-import toast from "react-hot-toast";
-
+import { toast } from "react-hot-toast";
 import { LuFileSpreadsheet } from "react-icons/lu";
 
 interface Task {
