@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const http_1 = __importDefault(require("http"));
+const cors_1 = __importDefault(require("cors"));
 const express_mongo_sanitize_1 = __importDefault(require("express-mongo-sanitize"));
 const cookie_parser_1 = __importDefault(require("cookie-parser"));
 const helmet_1 = __importDefault(require("helmet"));
@@ -23,16 +24,16 @@ const socket_1 = require("./config/socket");
 const PORT = process.env.PORT || 3000;
 const app = (0, express_1.default)();
 app.set('trust proxy', 1);
-// app.use(cors({
-//   origin: process.env.CLIENT_URL,
-//   credentials: true,
-//   methods: ['GET', 'POST', 'PUT', 'DELETE'],
-//   allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
-// }));
-// app.options('*', cors({
-//   origin: process.env.CLIENT_URL,
-//   credentials: true
-// }));
+app.use((0, cors_1.default)({
+    origin: process.env.CLIENT_URL,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
+}));
+app.options('*', (0, cors_1.default)({
+    origin: process.env.CLIENT_URL,
+    credentials: true
+}));
 // Middlewares
 app.use((0, express_mongo_sanitize_1.default)());
 app.use(express_1.default.json());

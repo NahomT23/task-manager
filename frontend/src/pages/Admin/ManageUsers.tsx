@@ -4,7 +4,7 @@ import axiosInstance from "../../api/axiosInstance";
 import { LuFileSpreadsheet } from "react-icons/lu";
 import { FiCopy, FiCheck } from "react-icons/fi";
 import { UserCard } from "../../components/Cards/UserCard";
-import { toast } from "react-toastify";
+import toast from "react-hot-toast";
 import UserCardSkeleton from "../../components/skeleton/UserCardSkeleton";
 import { useThemeStore } from "../../store/themeStore";
 

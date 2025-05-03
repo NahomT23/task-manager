@@ -11,9 +11,12 @@ import ViewTaskDetails from './pages/User/ViewTaskDetails';
 import Setup from './pages/setup/Setup';
 import MyProfile from './pages/MyProfile';
 import UserDetails from './pages/Admin/UserDetails';
-import { ToastContainer } from 'react-toastify';
+
 import PrivateRoutes from './routes/PrivateRoute';
 import LandingPage from './components/LandningPage';
+
+
+import { Toaster } from "react-hot-toast";
 
 function App() {
   return (
@@ -48,7 +51,8 @@ function App() {
           </Route>
 
         </Routes>
-        <ToastContainer />
+
+        <Toaster />
       </Router>
     </div>
   );

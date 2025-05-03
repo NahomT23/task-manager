@@ -5,8 +5,8 @@ import { useThemeStore } from '../store/themeStore';
 import { useOrganizationStore } from '../store/organizationStore';
 import axiosInstance from '../api/axiosInstance';
 import DashboardLayout from '../layouts/DashboardLayout';
-import { toast } from 'react-toastify'; 
-import 'react-toastify/dist/ReactToastify.css'; 
+import toast from "react-hot-toast";
+
 import { FaSpinner } from 'react-icons/fa'; 
 import { MdCloudUpload } from 'react-icons/md'; 
 

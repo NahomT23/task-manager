@@ -1,10 +1,11 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../../api/axiosInstance';
-import { toast } from 'react-toastify';
+import toast from "react-hot-toast";
+
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuthStore } from '../../store/authStore';
+import { useThemeStore } from '../../store/themeStore';
 
 
 
@@ -16,6 +17,9 @@ const Setup: React.FC = () => {
   const [organizationName, setOrganizationName] = useState('');
   const [invitationCode, setInvitationCode] = useState('');
   const setAuth = useAuthStore((state) => state.setAuth);
+  const { isDarkMode } = useThemeStore();
+      
+  
 
 
 
@@ -151,7 +155,7 @@ const Setup: React.FC = () => {
                   type="text"
                   value={organizationName}
                   onChange={(e) => setOrganizationName(e.target.value)}
-                  className="w-full border border-gray-200 p-3 rounded-lg mb-6 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  className={`w-full border border-gray-200 p-3 rounded-lg mb-6 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${isDarkMode ? 'text-black' : ''}`}
                   placeholder="Organization Name"
                 />
                 <div className="flex justify-end gap-3">
@@ -192,7 +196,7 @@ const Setup: React.FC = () => {
                   type="text"
                   value={invitationCode}
                   onChange={(e) => setInvitationCode(e.target.value)}
-                  className="w-full border border-gray-200 p-3 rounded-lg mb-6 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                  className={`w-full border border-gray-200 p-3 rounded-lg mb-6 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all ${isDarkMode ? 'text-black' : ''}`}
                   placeholder="Invitation Code"
                 />
                 <div className="flex justify-end gap-3">

@@ -10,7 +10,8 @@ import { StatusCard } from "../../components/Cards/UserCard";
 import { TaskCard } from "../../components/Cards/TaskCard";
 import UserDetailsSkeleton from "../../components/skeleton/UserDetailSkeleton";
 import { getInitialsColor } from "../../layouts/AvatarGroup";
-import { toast } from "react-toastify"; 
+import toast from "react-hot-toast";
+
 
 interface User {
   _id: string;

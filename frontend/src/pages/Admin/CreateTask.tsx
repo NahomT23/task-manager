@@ -6,7 +6,8 @@ import { PRIORITY_DATA } from "../../utils/data";
 import axiosInstance from "../../api/axiosInstance";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { LuTrash2 } from "react-icons/lu";
-import { toast } from "react-toastify";
+import toast from "react-hot-toast";
+
 import SelectDropDown from "../../components/SelectDropDown";
 import SelectUsers from "../../components/SelectUsers";
 import TodoListInput from "../../components/TodoListInput";

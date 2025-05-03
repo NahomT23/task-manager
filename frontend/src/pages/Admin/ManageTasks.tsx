@@ -5,7 +5,7 @@ import axiosInstance from "../../api/axiosInstance";
 import { LuFileSpreadsheet } from "react-icons/lu";
 import TaskStatusTabs from "../../components/TaskStatusTabs";
 import { TaskCard } from "../../components/Cards/TaskCard";
-import { toast } from "react-toastify";
+import toast from "react-hot-toast";
 import TaskCardSkeleton from "../../components/skeleton/TaskCardSkeleton";
 import { useThemeStore } from "../../store/themeStore";
 import { useQuery, UseQueryResult } from "@tanstack/react-query";
